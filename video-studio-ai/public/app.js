@@ -397,9 +397,14 @@
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok){const detail=result.details?("\nDetalle técnico: "+JSON.stringify(result.details)): "";throw new Error((result.message||result.error||"No se pudo registrar el trabajo.")+detail);}
       const durationLabel=durationSeconds<60?durationSeconds+" segundos":Math.floor(durationSeconds/60)+" minuto(s)"+(durationSeconds%60?" y "+(durationSeconds%60)+" segundos":"");
-      message("wan-queue-message","Trabajo de "+durationLabel+" registrado correctamente. ID: "+result.job.id+". Estado: en espera de GPU. El notebook Kaggle debe estar activo para procesarlo.");
+      const confirmation="Trabajo de "+durationLabel+" registrado correctamente. ID: "+result.job.id+". Estado: en espera de GPU. El notebook Kaggle debe estar activo para procesarlo.";
+      message("wan-queue-message",confirmation);
+      message("video-message",confirmation);
       await loadWanJobs();
-    }catch(error){message("wan-queue-message",error.message,true);}
+    }catch(error){
+      message("wan-queue-message",error.message,true);
+      message("video-message",error.message,true);
+    }
     finally{button.disabled=false;}
   }
 
