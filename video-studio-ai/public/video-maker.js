@@ -129,8 +129,12 @@
       const duration=Number($("video-duration").value)||30;
       if(duration>30){
         const queueButton=$("wan-queue-submit");
+        const story=$("video-story")?.value.trim()||"";
+        const projectId=$("generation-project")?.value||"";
         if(!queueButton)throw new Error("No está disponible la cola Wan 2.2 para películas de más de 30 segundos.");
-        setMessage("La duración seleccionada es de más de 30 segundos. Enviando la historia a la cola neuronal Wan 2.2...");
+        if(story.length<30)throw new Error("Escribe una historia de al menos 30 caracteres antes de crear el video.");
+        if(!projectId)throw new Error("Selecciona primero un proyecto en «Proyecto destino» de la sección de generación de imágenes.");
+        setMessage("Enviando la historia a la cola Wan 2.2. Consulta el estado en «Motor neuronal · Cola GPU».");
         queueButton.click();
         return;
       }
