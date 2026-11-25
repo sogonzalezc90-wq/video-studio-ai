@@ -1,0 +1,14 @@
+{
+  "name": "video-studio-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private cloud video studio starter",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,0 +1,73 @@
+name: Validate VIDEO STUDIO AI integration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [integration/supabase-wan22-job-bridge]
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check browser JavaScript syntax
+        run: node --check public/app.js
+      - name: Check Pages Function JavaScript syntax
+        run: node --input-type=module --check < functions/api/jobs.js
+      - name: Check Cloudflare Pages production-root JavaScript syntax
+        run: |
+          node --check video-studio-ai/public/app.js
+          node --input-type=module --check < video-studio-ai/functions/api/jobs.js
+      - name: Verify production root includes Wan queue wiring and migration
+        run: |
+          python - <<'PY'
+          import pathlib
+          app = pathlib.Path("video-studio-ai/public/app.js").read_text()
+          html = pathlib.Path("video-studio-ai/public/index.html").read_text()
+          api = pathlib.Path("video-studio-ai/functions/api/jobs.js").read_text()
+          migration = pathlib.Path("video-studio-ai/supabase/migrations/202611190001_video_jobs.sql")
+          assert "submitWanJob" in app and "loadWanJobs" in app, "Production UI is not wired to the Wan queue"
+          assert 'id="wan-queue-submit"' in html and 'id="wan-queue-list"' in html, "Production HTML is missing queue controls"
+          assert "createVideoJob" in api and "listVideoJobs" in api, "Production Pages Function is missing queue endpoints"
+          assert migration.exists() and "claim_next_video_job" in migration.read_text(), "Production migration is missing"
+          print("Cloudflare production-root queue wiring and migration verified.")
+          PY
+      - name: Install FFmpeg for audio rendering tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Compile GPU and audio workers
+        run: |
+          python -m py_compile worker/kaggle_supabase_worker.py
+          python -m py_compile worker/audio_pipeline.py
+          python -m unittest discover -s worker -p 'test_audio_pipeline.py' -v
+      - name: Validate notebook JSON and dynamic worker source revision
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          nb = json.loads(pathlib.Path("notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb").read_text())
+          cells = {cell.get("id"): cell for cell in nb.get("cells", [])}
+          assert "supabase-worker" in cells, "Missing Supabase worker cell"
+          source = "".join(cells["supabase-worker"].get("source", []))
+          assert "kaggle_supabase_worker.py" in source, "Notebook does not download GPU worker"
+          assert "audio_pipeline.py" in source, "Notebook does not download audio pipeline"
+          assert "api.github.com/repos/{REPO}/commits/main" in source, "Notebook does not resolve the current main revision"
+          assert "REVISION" in source and "ref={REVISION}" in source, "Notebook does not pin both worker downloads to the resolved commit"
+          worker = pathlib.Path("worker/kaggle_supabase_worker.py").read_text()
+          audio = pathlib.Path("worker/audio_pipeline.py").read_text()
+          assert "from audio_pipeline import build_audio_track" in worker, "GPU worker is not connected to audio pipeline"
+          assert "build_audio_track(" in worker and "voice_choice=" in worker, "Final MP4 does not invoke audio pipeline with the selected voice"
+          api = pathlib.Path("functions/api/jobs.js").read_text()
+          assert "createOptionalDialogueScript" in api and "VSA_ENABLE_AI_DIALOGUE" in api, "Optional AI dialogue writer missing"
+          assert "audio_script" in worker and "audio_script" in pathlib.Path("worker/audio_pipeline.py").read_text(), "Scene dialogue script is not passed to TTS"
+          assert "PiperVoice.load" in audio and "es_MX-claude-high" in audio, "Mexican Spanish TTS model missing"
+          assert any(c.get("id") == "start-comfy" for c in nb["cells"]), "ComfyUI startup cell missing"
+          print("Notebook JSON valid; dynamic worker revision and audio sources are connected.")
+          PY

@@ -1,0 +1,72 @@
+name: Validate cinematic production pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Compile Kaggle worker and audio pipeline
+        run: python -m py_compile worker/kaggle_supabase_worker.py worker/audio_pipeline.py
+      - name: Validate Cloudflare JavaScript syntax
+        run: |
+          node --input-type=module --check < functions/api/jobs.js
+          node --check public/app.js
+          node --input-type=module --check < video-studio-ai/functions/api/jobs.js
+          node --check video-studio-ai/public/production-engine.js
+          node --check video-studio-ai/public/production-ui.js
+          node --check video-studio-ai/public/scene-engine.js
+          node --check video-studio-ai/public/app.js
+      - name: Validate Kaggle notebook JSON and every code cell
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb")
+          notebook = json.loads(path.read_text(encoding="utf-8"))
+          ids = {cell.get("id") for cell in notebook.get("cells", [])}
+          required = {"cell-1", "cell-2", "cell-3", "cell-4", "cell-5", "cell-6", "worker-start"}
+          missing = required - ids
+          if missing:
+              raise SystemExit(f"Notebook missing required cells: {sorted(missing)}")
+          for index, cell in enumerate(notebook["cells"], start=1):
+              if cell.get("cell_type") == "code":
+                  compile("".join(cell.get("source", [])), f"notebook-cell-{index}", "exec")
+          print(f"Notebook valid: {len(notebook['cells'])} cells; all code cells compile.")
+          PY
+      - name: Validate continuity and media requirements
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          worker = Path("worker/kaggle_supabase_worker.py").read_text()
+          api = Path("functions/api/jobs.js").read_text()
+          production_api = Path("video-studio-ai/functions/api/jobs.js").read_text()
+          notebook = Path("notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb").read_text()
+          checks = {
+              "I2V image input": '"start_image":["56",0]' in worker,
+              "video references": 'mime.startswith("video/")' in worker,
+              "last-frame chaining": "extract_last_frame" in worker and "previous_frame = next_frame" in worker,
+              "saved segment masters": "_save_continuity_reference" in worker and "fetch_segment_master_images" in worker,
+              "segment master enforcement": "segment_master_images_missing" in production_api,
+              "manifest reaches GPU worker": "production_manifest:productionManifest" in production_api,
+              "API media validation": "reference_media_count" in api,
+              "multireference image generation": "flux-2-klein-4b" in production_api and "input_image_" in production_api,
+              "Kaggle I2V smoke test": "Wan22ImageToVideoLatent" in notebook and "start_image" in notebook,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          for name, ok in checks.items():
+              print(("PASS " if ok else "FAIL ") + name)
+          if failed:
+              raise SystemExit("Missing requirements: " + ", ".join(failed))
+          PY

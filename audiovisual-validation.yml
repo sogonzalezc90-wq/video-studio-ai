@@ -1,0 +1,25 @@
+name: audiovisual-validation
+on:
+  push:
+    branches: [main, feature/audiovisual-integration]
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Compile Python workers
+        run: python -m py_compile worker/kaggle_supabase_worker.py worker/audio_pipeline.py
+      - name: Check browser JavaScript
+        run: node --check public/app.js
+      - name: Validate notebook JSON
+        run: python -c "import json; json.load(open('notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb', encoding='utf-8'))"
+      - name: Run pipeline contract tests
+        run: python -m unittest discover -s tests -v

@@ -1,0 +1,24 @@
+name: Validate VIDEO STUDIO AI
+on:
+  push:
+    branches: ["main", "rebuild/**", "codex/**"]
+  pull_request:
+    branches: ["main"]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check video-studio-ai/public/app.js
+      - run: node --check video-studio-ai/public/scene-engine.js
+      - run: node --check video-studio-ai/public/production-engine.js
+      - run: node --check video-studio-ai/public/motion-engine.js
+      - run: node --check video-studio-ai/public/film-renderer.js
+      - run: node --check video-studio-ai/public/production-ui.js
+      - run: node --check video-studio-ai/public/video-maker.js
+      - run: node --check video-studio-ai/functions/api/jobs.js
+      - run: npm test
+        working-directory: video-studio-ai

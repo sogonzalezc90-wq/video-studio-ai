@@ -1,0 +1,54 @@
+name: Kaggle notebook static validation
+
+on:
+  pull_request:
+    paths:
+      - "notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb"
+      - "worker/*.py"
+      - ".github/workflows/kaggle-notebook-validation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb"
+      - "worker/*.py"
+
+jobs:
+  validate-notebook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate notebook JSON and compile every Python cell
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb")
+          notebook = json.loads(path.read_text(encoding="utf-8"))
+          required_ids = {
+              "cell-1", "cell-2", "cell-3",
+              "cell-4", "cell-5", "cell-6", "worker-start"
+          }
+          cells = {cell.get("id"): cell for cell in notebook.get("cells", [])}
+          missing = required_ids - cells.keys()
+          if missing:
+              raise SystemExit(f"Missing required notebook cells: {sorted(missing)}")
+          for cell in notebook["cells"]:
+              if cell.get("cell_type") != "code":
+                  continue
+              source = cell.get("source", [])
+              source = "".join(source) if isinstance(source, list) else source
+              compile(source, f"{path}::{cell.get('id', 'unknown')}", "exec")
+              print("Python syntax OK:", cell.get("id"))
+          cell5 = "".join(cells["cell-5"]["source"])
+          for marker in ("/prompt", "/history/", "/view", "ffprobe", "start_image"):
+              if marker not in cell5:
+                  raise SystemExit(f"Cell 5 is missing real generation/verification step: {marker}")
+          print("Notebook JSON, required cells, Python syntax and real test-render flow validated.")
+          PY
+      - name: Compile worker modules
+        run: |
+          python -m py_compile worker/kaggle_supabase_worker.py worker/audio_pipeline.py

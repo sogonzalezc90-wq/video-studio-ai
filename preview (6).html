@@ -1,0 +1,748 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080d18">
+  <meta name="description" content="VIDEO STUDIO AI. Estudio privado de producción cinematográfica con inteligencia artificial.">
+  <title>VIDEO STUDIO AI | Film Production Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a href="#inicio" class="brand">
+      <span class="brand-icon">VS</span>
+      <span class="brand-name">
+        <strong>VIDEO STUDIO AI</strong>
+        <small>FILM PRODUCTION</small>
+      </span>
+    </a>
+
+    <div class="workspace-label">WORKSPACE</div>
+
+    <nav class="navigation">
+      <a href="#inicio" class="nav-link active" data-section="inicio">
+        <span class="nav-icon">◈</span> Overview
+      </a>
+      <a href="#historias" class="nav-link" data-section="historias">
+        <span class="nav-icon">✎</span> Historia y guion
+      </a>
+      <a href="#personajes" class="nav-link" data-section="personajes">
+        <span class="nav-icon">♙</span> Personajes
+      </a>
+      <a href="#escenas" class="nav-link" data-section="escenas">
+        <span class="nav-icon">▤</span> Escenas y tomas
+      </a>
+      <a href="#imagenes" class="nav-link" data-section="imagenes">
+        <span class="nav-icon">▧</span> Imagen AI
+      </a>
+      <a href="#videos" class="nav-link" data-section="videos">
+        <span class="nav-icon">▶</span> Video AI
+      </a>
+      <a href="#audio" class="nav-link" data-section="audio">
+        <span class="nav-icon">♫</span> Audio Studio
+      </a>
+      <a href="#edicion" class="nav-link" data-section="edicion">
+        <span class="nav-icon">▥</span> Film Editor
+      </a>
+      <a href="#exportacion" class="nav-link" data-section="exportacion">
+        <span class="nav-icon">⇩</span> Exportación
+      </a>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+    <div class="workspace-label">LIBRARY</div>
+
+    <nav class="navigation">
+      <a href="#proyectos" class="nav-link" data-section="proyectos">
+        <span class="nav-icon">▣</span> Mis películas
+      </a>
+      <a href="#recursos" class="nav-link" data-section="recursos">
+        <span class="nav-icon">▧</span> Recursos
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="engine-status">
+        <span class="status-light"></span>
+        <div>
+          <strong>STUDIO MODE</strong>
+          <small>Espacio privado</small>
+        </div>
+      </div>
+      <small class="sidebar-version">VIDEO STUDIO AI · PRIVATE EDITION</small>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <main class="main-content" id="inicio">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="breadcrumb">
+        <span>STUDIO</span>
+        <span class="breadcrumb-separator">/</span>
+        <strong>Production workspace</strong>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="private-label">
+          <span class="status-light"></span>
+          ESPACIO PRIVADO
+        </span>
+        <span id="connection-status" class="connection-status">
+          Preparando estudio
+        </span>
+        <button id="logout-button" class="topbar-button" type="button">
+          Cerrar sesión
+        </button>
+      </div>
+    </header>
+
+    <!-- DASHBOARD -->
+    <section class="dashboard-section">
+      <div class="hero-panel">
+        <div class="hero-content">
+          <span class="eyebrow">AI CINEMATIC PRODUCTION PLATFORM</span>
+          <h1>Convierte tus historias<br>en <span>experiencias cinematográficas.</span></h1>
+          <p>
+            Desarrolla historias, construye personajes, diseña escenas,
+            genera imágenes, crea secuencias audiovisuales y ensambla
+            películas completas con inteligencia artificial.
+          </p>
+          <a href="#historias" class="hero-button">
+            + Crear nueva producción
+          </a>
+        </div>
+        <div class="hero-decoration">
+          <div class="hero-orbit orbit-one"></div>
+          <div class="hero-orbit orbit-two"></div>
+          <div class="hero-monogram">VS</div>
+          <span class="hero-caption">YOUR PRIVATE FILM STUDIO</span>
+        </div>
+      </div>
+
+      <div class="dashboard-stats">
+        <article class="stat-card">
+          <span class="stat-label">PROYECTOS</span>
+          <strong id="stat-projects">0</strong>
+          <small>Producciones creadas</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">ESCENAS</span>
+          <strong id="stat-scenes">0</strong>
+          <small>Escenas planificadas</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">RECURSOS</span>
+          <strong id="stat-assets">0</strong>
+          <small>Archivos multimedia</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">PRODUCCIÓN</span>
+          <strong id="stat-progress">0%</strong>
+          <small>Avance del proyecto activo</small>
+        </article>
+      </div>
+    </section>
+
+    <!-- CREATION WORKSPACE -->
+    <section class="studio-section" id="historias">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">01 / CREATIVE DEVELOPMENT</span>
+          <h2>Crear una producción</h2>
+          <p>Define la historia y los parámetros cinematográficos.</p>
+        </div>
+        <span class="section-tag">NEW PROJECT</span>
+      </div>
+
+      <div class="creation-layout">
+        <div class="panel creation-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">PROJECT SETUP</span>
+              <h3>Concepto de película</h3>
+            </div>
+            <span class="step-indicator">01 — 08</span>
+          </div>
+
+          <div class="field-group">
+            <label for="project-title">Título de la producción</label>
+            <input id="project-title" type="text" maxlength="150"
+              placeholder="Escribe el título de tu película">
+          </div>
+
+          <div class="field-group">
+            <label for="story-description">Historia y guion completo</label>
+            <textarea id="story-description" rows="12"
+              placeholder="Describe tu historia: personajes, apariencia, personalidad, vestuario, diálogos, escenarios, acontecimientos, acciones, movimientos de cámara y desenlace. Puedes desarrollar historias extensas."></textarea>
+            <div class="field-footer">
+              <span>GUION · HISTORIA · NARRATIVA</span>
+              <span id="story-character-count">0 caracteres</span>
+            </div>
+          </div>
+
+          <div class="subsection-title">CONFIGURACIÓN CINEMATOGRÁFICA</div>
+
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="production-duration">Duración de película</label>
+              <select id="production-duration">
+                <option value="15s">15 segundos</option>
+                <option value="30s">30 segundos</option>
+                <option value="1m">1 minuto</option>
+                <option value="5m">5 minutos</option>
+                <option value="10m">10 minutos</option>
+                <option value="15m">15 minutos</option>
+                <option value="20m" selected>20 minutos</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="production-genre">Género cinematográfico</label>
+              <select id="production-genre">
+                <option value="automatic">Detección automática</option>
+                <option value="action">Acción</option>
+                <option value="adventure">Aventura</option>
+                <option value="animation">Animación</option>
+                <option value="comedy">Comedia</option>
+                <option value="documentary">Documental</option>
+                <option value="drama">Drama</option>
+                <option value="family">Infantil y familiar</option>
+                <option value="horror">Terror</option>
+                <option value="science-fiction">Ciencia ficción</option>
+                <option value="suspense">Suspenso</option>
+                <option value="commercial">Comercial</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="visual-style">Dirección artística</label>
+              <select id="visual-style">
+                <option value="cinematic-realistic">Cine realista</option>
+                <option value="photorealistic">Fotorrealismo</option>
+                <option value="animation-3d">Animación 3D</option>
+                <option value="anime">Anime</option>
+                <option value="cartoon">Caricatura</option>
+                <option value="documentary">Documental</option>
+                <option value="automatic">Según la historia</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="video-resolution">Resolución objetivo</label>
+              <select id="video-resolution">
+                <option value="720p">HD · 720p</option>
+                <option value="1080p" selected>Full HD · 1080p</option>
+                <option value="source">Máxima del motor</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="aspect-ratio">Relación de aspecto</label>
+              <select id="aspect-ratio">
+                <option value="16:9">16:9 · Cinematográfico</option>
+                <option value="9:16">9:16 · Vertical</option>
+                <option value="1:1">1:1 · Cuadrado</option>
+                <option value="4:3">4:3 · Clásico</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="language">Idioma de producción</label>
+              <select id="language">
+                <option value="es-MX">Español latinoamericano</option>
+                <option value="es-ES">Español de España</option>
+                <option value="en-US">Inglés estadounidense</option>
+                <option value="automatic">Automático</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="subsection-title">PRODUCCIÓN AUDIOVISUAL</div>
+
+          <div class="feature-grid">
+            <label class="feature-option">
+              <input id="enable-dialogue" type="checkbox" checked>
+              <span class="feature-symbol">♫</span>
+              <span>
+                <strong>Voces y diálogos</strong>
+                <small>Voces diferenciadas por personaje</small>
+              </span>
+            </label>
+
+            <label class="feature-option">
+              <input id="enable-music" type="checkbox" checked>
+              <span class="feature-symbol">♪</span>
+              <span>
+                <strong>Música original</strong>
+                <small>Adaptada al desarrollo narrativo</small>
+              </span>
+            </label>
+
+            <label class="feature-option">
+              <input id="enable-effects" type="checkbox" checked>
+              <span class="feature-symbol">◉</span>
+              <span>
+                <strong>Efectos ambientales</strong>
+                <small>Sonidos según cada acción</small>
+              </span>
+            </label>
+
+            <label class="feature-option">
+              <input id="enable-continuity" type="checkbox" checked>
+              <span class="feature-symbol">◎</span>
+              <span>
+                <strong>Continuidad visual</strong>
+                <small>Personajes y escenarios consistentes</small>
+              </span>
+            </label>
+          </div>
+
+          <div class="action-row">
+            <button id="save-draft" class="secondary-button" type="button">
+              Guardar borrador
+            </button>
+            <button id="analyze-story" class="primary-button" type="button">
+              Analizar historia y crear escenas →
+            </button>
+          </div>
+
+          <p id="story-status" class="status-message" aria-live="polite">
+            Esperando una historia para comenzar.
+          </p>
+        </div>
+
+        <!-- PRODUCTION SUMMARY -->
+        <aside class="panel production-summary">
+          <span class="panel-kicker">PRODUCTION BRIEF</span>
+          <h3>Ficha de producción</h3>
+          <div class="summary-preview">
+            <div class="preview-symbol">VS</div>
+            <span>PROJECT CONFIGURATION</span>
+          </div>
+
+          <div class="summary-list">
+            <div><span>Duración</span><strong id="summary-duration">20 minutos</strong></div>
+            <div><span>Género</span><strong id="summary-genre">Automático</strong></div>
+            <div><span>Formato</span><strong id="summary-format">16:9</strong></div>
+            <div><span>Resolución</span><strong id="summary-resolution">1080p</strong></div>
+            <div><span>Idioma</span><strong id="summary-language">Español latino</strong></div>
+          </div>
+
+          <div class="summary-divider"></div>
+          <h4>Flujo de producción</h4>
+          <ol class="production-flow">
+            <li><span>01</span> Historia y guion</li>
+            <li><span>02</span> Personajes y escenarios</li>
+            <li><span>03</span> Escenas y tomas</li>
+            <li><span>04</span> Imágenes de referencia</li>
+            <li><span>05</span> Generación de video</li>
+            <li><span>06</span> Voces y sonido</li>
+            <li><span>07</span> Edición y montaje</li>
+            <li><span>08</span> Película final</li>
+          </ol>
+          <p class="summary-note">
+            Las películas extensas se producirán mediante segmentos
+            audiovisuales que después serán ensamblados.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- CINEMATIC MONITOR -->
+    <section class="studio-section" id="monitor">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">02 / CINEMATIC MONITOR</span>
+          <h2>Monitor de producción</h2>
+          <p>Espacio de previsualización de escenas y material audiovisual.</p>
+        </div>
+        <span class="section-tag">PREVIEW MONITOR</span>
+      </div>
+
+      <div class="panel monitor-panel">
+        <div class="monitor-toolbar">
+          <span>PROJECT PREVIEW</span>
+          <span>16:9 · PREVISUALIZACIÓN</span>
+        </div>
+        <div class="cinema-screen" id="cinema-screen">
+          <div class="screen-overlay">
+            <div class="screen-logo">VS</div>
+            <h3>YOUR FILM STARTS HERE</h3>
+            <p>El material generado aparecerá en este monitor.</p>
+            <span class="screen-play">▶</span>
+          </div>
+        </div>
+        <div class="monitor-footer">
+          <span id="preview-scene">ESCENA SIN SELECCIONAR</span>
+          <span>VIDEO STUDIO AI PLAYER</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARACTERS -->
+    <section class="studio-section" id="personajes">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">03 / CHARACTER DESIGN</span>
+          <h2>Personajes y continuidad</h2>
+          <p>Identidad visual, vestuario, personalidad y diseño de voces.</p>
+        </div>
+      </div>
+
+      <div class="panel module-panel">
+        <div class="module-toolbar">
+          <div>
+            <h3>Character library</h3>
+            <p>Registro de personajes principales y secundarios.</p>
+          </div>
+          <button id="add-character" class="secondary-button" type="button">
+            + Agregar personaje
+          </button>
+        </div>
+        <div id="character-list" class="empty-state">
+          Los personajes de la historia aparecerán aquí después del análisis.
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENES -->
+    <section class="studio-section" id="escenas">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">04 / SCENE MANAGEMENT</span>
+          <h2>Escenas y dirección cinematográfica</h2>
+          <p>Acciones, tomas, cámara, iluminación, diálogos y duración.</p>
+        </div>
+      </div>
+
+      <div class="panel module-panel">
+        <div class="module-toolbar">
+          <div>
+            <h3>Scene breakdown</h3>
+            <p>Organización de cada secuencia de la película.</p>
+          </div>
+          <button id="refresh-scenes" class="secondary-button" type="button">
+            Actualizar escenas
+          </button>
+        </div>
+        <div class="scene-columns">
+          <span>ESCENA</span>
+          <span>DESCRIPCIÓN</span>
+          <span>DURACIÓN</span>
+          <span>ESTADO</span>
+        </div>
+        <div id="scene-list" class="empty-state">
+          Las escenas aparecerán después del análisis de la historia.
+        </div>
+      </div>
+    </section>
+
+    <!-- IMAGE STUDIO -->
+    <section class="studio-section" id="imagenes">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">05 / IMAGE GENERATION</span>
+          <h2>Image Studio</h2>
+          <p>Diseño de personajes, escenarios, objetos y fotogramas.</p>
+        </div>
+        <span class="section-tag">AI IMAGE ENGINE</span>
+      </div>
+
+      <div class="panel module-panel">
+        <div class="field-group">
+          <label for="image-prompt">Descripción visual</label>
+          <textarea id="image-prompt" rows="5"
+            placeholder="Describe la composición, personajes, vestuario, iluminación, lente, perspectiva, ambiente, materiales y estilo visual..."></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="image-type">Tipo de recurso</label>
+            <select id="image-type">
+              <option value="character">Diseño de personaje</option>
+              <option value="location">Escenario</option>
+              <option value="scene">Fotograma cinematográfico</option>
+              <option value="reference">Referencia visual</option>
+              <option value="object">Objeto o vehículo</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="image-model">Motor de imágenes</label>
+            <select id="image-model">
+              <option value="automatic">Motor gratuito disponible</option>
+              <option value="stable-diffusion">Stable Diffusion</option>
+              <option value="flux">FLUX compatible</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="generate-image" class="primary-button" type="button">
+          Generar imagen
+        </button>
+        <div id="image-gallery" class="media-gallery empty-state">
+          La biblioteca visual mostrará las imágenes generadas.
+        </div>
+      </div>
+    </section>
+
+    <!-- VIDEO STUDIO -->
+    <section class="studio-section" id="videos">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">06 / VIDEO GENERATION</span>
+          <h2>Video Studio</h2>
+          <p>Generación de movimiento, cámara y secuencias cinematográficas.</p>
+        </div>
+        <span class="section-tag">WAN 2.2 · COMFYUI</span>
+      </div>
+
+      <div class="panel module-panel">
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="video-engine">Motor de video</label>
+            <select id="video-engine">
+              <option value="wan22">Wan 2.2 · ComfyUI</option>
+              <option value="automatic">Motor compatible disponible</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="clip-duration">Duración por segmento</label>
+            <select id="clip-duration">
+              <option value="5">5 segundos</option>
+              <option value="10">10 segundos</option>
+              <option value="15">15 segundos</option>
+              <option value="30">30 segundos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="video-prompt">Dirección de movimiento</label>
+          <textarea id="video-prompt" rows="5"
+            placeholder="Describe el movimiento de cámara, travelling, paneo, zoom, desplazamiento de personajes, movimiento de vehículos, acciones y ambiente..."></textarea>
+        </div>
+
+        <div class="feature-grid">
+          <label class="feature-option">
+            <input id="use-reference-image" type="checkbox" checked>
+            <span><strong>Imagen de referencia</strong><small>Guiar la apariencia visual</small></span>
+          </label>
+          <label class="feature-option">
+            <input id="preserve-motion-continuity" type="checkbox" checked>
+            <span><strong>Continuidad de movimiento</strong><small>Conservar coherencia entre clips</small></span>
+          </label>
+        </div>
+
+        <button id="generate-video" class="primary-button" type="button">
+          Generar segmento de video
+        </button>
+        <div id="video-gallery" class="media-gallery empty-state">
+          Los segmentos de video aparecerán aquí.
+        </div>
+      </div>
+    </section>
+
+    <!-- AUDIO STUDIO -->
+    <section class="studio-section" id="audio">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">07 / SOUND DESIGN</span>
+          <h2>Audio Studio</h2>
+          <p>Voces, diálogos, sincronización labial, música y efectos.</p>
+        </div>
+        <span class="section-tag">AUDIO PRODUCTION</span>
+      </div>
+
+      <div class="panel module-panel">
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="voice-engine">Motor de voz</label>
+            <select id="voice-engine">
+              <option value="piper">Piper TTS</option>
+              <option value="automatic">Motor compatible disponible</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="voice-language">Idioma de voces</label>
+            <select id="voice-language">
+              <option value="es-MX">Español latinoamericano</option>
+              <option value="es-ES">Español de España</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="audio-instructions">Diseño sonoro de la película</label>
+          <textarea id="audio-instructions" rows="5"
+            placeholder="Define voces, edad vocal aproximada, personalidad, diálogos, música, ambiente y efectos. Ejemplo: motor de automóvil al acelerar, viento en carretera y música de tensión..."></textarea>
+        </div>
+
+        <div class="audio-categories">
+          <span>DIÁLOGOS</span>
+          <span>VOCES</span>
+          <span>MÚSICA</span>
+          <span>AMBIENTE</span>
+          <span>EFECTOS</span>
+          <span>LIP SYNC</span>
+        </div>
+
+        <button id="generate-audio" class="primary-button" type="button">
+          Preparar audio de producción
+        </button>
+        <div id="audio-library" class="empty-state">
+          Las pistas de audio aparecerán aquí.
+        </div>
+      </div>
+    </section>
+
+    <!-- FILM EDITOR -->
+    <section class="studio-section" id="edicion">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">08 / POST PRODUCTION</span>
+          <h2>Film Editor</h2>
+          <p>Montaje, sincronización y ensamblaje audiovisual.</p>
+        </div>
+        <span class="section-tag">MULTITRACK EDITOR</span>
+      </div>
+
+      <div class="panel editor-panel">
+        <div class="editor-toolbar">
+          <div>
+            <span class="panel-kicker">TIMELINE WORKSPACE</span>
+            <h3>Línea de tiempo cinematográfica</h3>
+          </div>
+          <span class="editor-timecode">00:00:00:00</span>
+        </div>
+
+        <div class="timeline-ruler">
+          <span>00:00</span><span>00:30</span><span>01:00</span>
+          <span>01:30</span><span>02:00</span><span>02:30</span>
+        </div>
+
+        <div class="editor-track">
+          <div class="track-label">VIDEO</div>
+          <div id="video-timeline" class="timeline-track">
+            <span>Segmentos de película</span>
+          </div>
+        </div>
+        <div class="editor-track">
+          <div class="track-label">VOCES</div>
+          <div id="voice-timeline" class="timeline-track">
+            <span>Diálogos y narración</span>
+          </div>
+        </div>
+        <div class="editor-track">
+          <div class="track-label">MÚSICA</div>
+          <div id="music-timeline" class="timeline-track">
+            <span>Música y ambiente</span>
+          </div>
+        </div>
+        <div class="editor-track">
+          <div class="track-label">EFECTOS</div>
+          <div id="effects-timeline" class="timeline-track">
+            <span>Efectos de sonido</span>
+          </div>
+        </div>
+
+        <button id="assemble-film" class="primary-button" type="button">
+          Ensamblar película
+        </button>
+      </div>
+    </section>
+
+    <!-- EXPORT -->
+    <section class="studio-section" id="exportacion">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">09 / FINAL DELIVERY</span>
+          <h2>Exportación cinematográfica</h2>
+          <p>Configuración y preparación del archivo final.</p>
+        </div>
+      </div>
+
+      <div class="panel module-panel">
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="export-format">Formato de salida</label>
+            <select id="export-format">
+              <option value="mp4">MP4 · H.264</option>
+              <option value="webm">WebM</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="export-quality">Resolución final</label>
+            <select id="export-quality">
+              <option value="1080p">1080p · Objetivo</option>
+              <option value="720p">720p</option>
+              <option value="source">Según material disponible</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="export-film" class="primary-button" type="button">
+          Preparar exportación final
+        </button>
+        <div id="export-status" class="status-message" aria-live="polite">
+          La exportación estará disponible después del montaje y la validación.
+        </div>
+        <div id="export-result"></div>
+      </div>
+    </section>
+
+    <!-- PROJECT LIBRARY -->
+    <section class="studio-section" id="proyectos">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">10 / PERSONAL LIBRARY</span>
+          <h2>Mis producciones</h2>
+          <p>Archivo de películas, historias y proyectos audiovisuales.</p>
+        </div>
+      </div>
+      <div class="panel module-panel">
+        <div id="project-library" class="empty-state">
+          Tus producciones aparecerán en esta biblioteca.
+        </div>
+      </div>
+    </section>
+
+    <!-- ASSETS -->
+    <section class="studio-section" id="recursos">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">11 / MEDIA ASSETS</span>
+          <h2>Biblioteca multimedia</h2>
+          <p>Imágenes, clips, referencias, voces y recursos de producción.</p>
+        </div>
+      </div>
+      <div class="panel module-panel">
+        <div id="asset-library" class="empty-state">
+          Los recursos multimedia aparecerán aquí.
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <strong>VIDEO STUDIO AI</strong>
+      <span>PRIVATE CINEMATIC PRODUCTION WORKSPACE</span>
+      <span>MODULAR · AI POWERED · PERSONAL USE</span>
+    </footer>
+
+  </main>
+</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
