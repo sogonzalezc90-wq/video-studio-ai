@@ -289,7 +289,7 @@
   }
   $('login-btn').addEventListener('click',()=>auth('login'));
   $('signup-btn').addEventListener('click',()=>auth('signup'));
-  $('save-video-btn').addEventListener('click',saveVideoProject);
+  $('save-video-btn')?.addEventListener('click',saveVideoProject);
   $('generate-video-btn').addEventListener('click',startGeneration);
   $('video-project-source').addEventListener('change',()=>selectExistingProject().catch(e=>message('video-message',e.message,true)));
   $('clear-video-btn').addEventListener('click',()=>{['video-name','video-prompt'].forEach(id=>$(id).value='');$('video-project-source').value='';$('video-reference-files').value='';selectExistingProject();message('video-message','Formulario limpio.');});
