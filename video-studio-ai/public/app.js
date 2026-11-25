@@ -89,7 +89,14 @@
         const title=document.createElement("h4"); title.textContent=p.name;
         const desc=document.createElement("p"); desc.textContent=p.description||"Sin descripción";
         const date=document.createElement("small"); date.textContent=new Date(p.created_at).toLocaleDateString("es-MX");
-        card.append(title,desc,date); root.append(card);
+        card.append(title,desc,date);
+        const removeButton=document.createElement("button");
+        removeButton.type="button";
+        removeButton.className="danger-button";
+        removeButton.textContent="Eliminar proyecto";
+        removeButton.addEventListener("click",()=>deleteProject(p,removeButton));
+        card.append(removeButton);
+        root.append(card);
         [$("asset-project"),$("generation-project")].forEach(select=>{
           const opt=document.createElement("option"); opt.value=p.id; opt.textContent=p.name; select.append(opt);
         });
@@ -207,52 +214,118 @@
   async function createProject() {
     const button=$("create-project-btn");
     try {
-      const name=$("project-name").value.trim(), description=$("project-description").value.trim();
+      const name=$("project-name").value.trim();
+      const description=$("project-description").value.trim();
       if(!name) throw new Error("Escribe el nombre del proyecto.");
+      if(name.length>120) throw new Error("El nombre del proyecto no puede superar 120 caracteres.");
       button.disabled=true;
-      message("project-message","Guardando el proyecto en Supabase…");
-      const {data:{user},error:userError}=await client().auth.getUser();
-      if(userError)throw userError;
-      if(!user)throw new Error("No se encontró una sesión activa. Cierra sesión e inicia nuevamente.");
+      message("project-message","Guardando el proyecto en tu biblioteca privada…");
+      const sb=client();
+      const {data:{user},error:userError}=await sb.auth.getUser();
+      if(userError) throw userError;
+      if(!user?.id) throw new Error("No hay una sesión válida. Vuelve a iniciar sesión.");
 
-      // Existing installations may still have the old required projects.prompt
-      // column or may not yet have projects.description. Try the current schema
-      // first, then narrowly fall back for those two known migration differences.
-      const records=[
-        {name,description,user_id:user.id},
-        {name,description,prompt:description||name,user_id:user.id},
-        {name,prompt:description||name,user_id:user.id}
+      // Current schema first; subsequent attempts cover known legacy schemas.
+      const attempts=[
+        {record:{name,description,user_id:user.id},columns:"id,name,description,created_at"},
+        {record:{name,description,prompt:description||name,user_id:user.id},columns:"id,name,description,created_at"},
+        {record:{name,prompt:description||name,user_id:user.id},columns:"id,name,created_at"},
+        {record:{name,user_id:user.id},columns:"id,name,created_at"}
       ];
       let savedProject=null,lastError=null;
-      for(const record of records){
-        const result=await client().from("projects").insert(record)
-          .select("id,name,description,created_at").single();
-        if(!result.error && result.data?.id){savedProject=result.data;break;}
-        if(!result.error) throw new Error("Supabase aceptó el alta, pero no devolvió el registro creado. Revisa el permiso SELECT de public.projects.");
+      for(const attempt of attempts){
+        const result=await sb.from("projects").insert(attempt.record).select(attempt.columns).single();
+        if(!result.error && result.data?.id){savedProject={...result.data,description:result.data.description??description};break;}
+        if(!result.error) throw new Error("La base de datos no devolvió el proyecto guardado. Comprueba los permisos SELECT de public.projects.");
         lastError=result.error;
         const code=String(result.error.code||"");
         const detail=String(result.error.message||"");
-        const legacySchemaMismatch=["23502","42703","PGRST204"].includes(code)
+        const legacyMismatch=["23502","42703","PGRST204"].includes(code)
           ||/column .*does not exist|could not find .*column|null value in column .*prompt|schema cache/i.test(detail);
-        if(!legacySchemaMismatch)throw result.error;
+        if(!legacyMismatch) throw new Error(formatSupabaseError(result.error));
       }
-      if(!savedProject)throw new Error(
-        "Supabase rechazó la creación incluso con compatibilidad para el esquema anterior. "
-        +(lastError?.message||"Revisa las columnas de public.projects.")
-        +" Ejecuta supabase/VIDEO_STUDIO_AI_PRODUCTION_UPGRADE.sql en Supabase SQL Editor."
-      );
-      $("project-name").value=""; $("project-description").value="";
-      message("project-message","Proyecto guardado correctamente. Actualizando biblioteca…");
-      await loadProjects();
-      if(!projects.some(project=>project.id===savedProject.id))
-        throw new Error("Supabase creó el proyecto (ID "+savedProject.id+"), pero la consulta de biblioteca no lo devolvió. Revisa SELECT/RLS en public.projects.");
-      message("project-message","Proyecto creado y confirmado en tu biblioteca.");
-    } catch(e) {
-      message("project-message","No se pudo crear el proyecto: "+(e.message||String(e)),true);
+      if(!savedProject) throw new Error("No se pudo guardar el proyecto. "+formatSupabaseError(lastError));
+      const refreshed=await loadProjects();
+      if(!refreshed.some(project=>project.id===savedProject.id))
+        throw new Error("El proyecto fue insertado, pero no apareció al volver a leer la biblioteca. Revisa las políticas SELECT de public.projects.");
+      $("project-name").value="";
+      $("project-description").value="";
+      $("generation-project").value=savedProject.id;
+      $("asset-project").value=savedProject.id;
+      message("project-message","Proyecto creado, guardado y verificado en tu biblioteca.");
+    } catch(error) {
+      message("project-message","No se pudo crear el proyecto: "+formatSupabaseError(error),true);
     } finally {
-      button.disabled=false;
+      if(button) button.disabled=false;
     }
   }
+
+  async function deleteProject(project,button) {
+    if(!project?.id) return;
+    const confirmed=window.confirm(
+      '¿Eliminar definitivamente el proyecto "'+project.name+'"?\\n\\n' +
+      "También se eliminarán sus imágenes, videos, planes y trabajos terminados. Esta acción no se puede deshacer."
+    );
+    if(!confirmed) return;
+    if(button) button.disabled=true;
+    message("project-message",'Preparando la eliminación de "'+project.name+'"…');
+    try {
+      const sb=client();
+      const {data:{user},error:userError}=await sb.auth.getUser();
+      if(userError) throw userError;
+      if(!user?.id) throw new Error("La sesión expiró. Vuelve a iniciar sesión.");
+
+      const [assetsResult,jobsResult]=await Promise.all([
+        sb.from("project_assets").select("id,storage_path").eq("project_id",project.id).eq("user_id",user.id),
+        sb.from("video_jobs").select("id,status,output_path").eq("project_id",project.id).eq("user_id",user.id)
+      ]);
+      if(assetsResult.error) throw new Error("No se pudieron consultar los archivos del proyecto: "+formatSupabaseError(assetsResult.error));
+      if(jobsResult.error) throw new Error("No se pudieron consultar los trabajos del proyecto: "+formatSupabaseError(jobsResult.error));
+
+      const activeStatuses=new Set(["queued","processing","assembling","cancelling"]);
+      const activeJobs=(jobsResult.data||[]).filter(job=>activeStatuses.has(job.status));
+      if(activeJobs.length)
+        throw new Error("Este proyecto tiene "+activeJobs.length+" trabajo(s) de video en espera o en proceso. Cancélalos y espera a que terminen antes de eliminar el proyecto.");
+
+      const assetPaths=[...new Set((assetsResult.data||[]).map(asset=>asset.storage_path).filter(Boolean))];
+      const renderPaths=[...new Set((jobsResult.data||[]).map(job=>job.output_path).filter(Boolean))];
+      const removeInBatches=async(bucket,paths)=>{
+        for(let offset=0;offset<paths.length;offset+=100){
+          const batch=paths.slice(offset,offset+100);
+          const {error}=await sb.storage.from(bucket).remove(batch);
+          if(error) throw new Error("No se pudieron eliminar todos los archivos de "+bucket+": "+formatSupabaseError(error));
+        }
+      };
+      await removeInBatches("video-assets",assetPaths);
+      await removeInBatches("video-renders",renderPaths);
+
+      const jobsDelete=await sb.from("video_jobs").delete()
+        .eq("project_id",project.id).eq("user_id",user.id).select("id");
+      if(jobsDelete.error) throw new Error("No se pudieron eliminar los trabajos vinculados: "+formatSupabaseError(jobsDelete.error));
+
+      const manifestsDelete=await sb.from("production_manifests").delete()
+        .eq("project_id",project.id).eq("user_id",user.id).select("id");
+      if(manifestsDelete.error) throw new Error("No se pudieron eliminar los planes de producción: "+formatSupabaseError(manifestsDelete.error));
+
+      const assetsDelete=await sb.from("project_assets").delete()
+        .eq("project_id",project.id).eq("user_id",user.id).select("id");
+      if(assetsDelete.error) throw new Error("No se pudieron eliminar los registros de archivos: "+formatSupabaseError(assetsDelete.error));
+
+      const projectDelete=await sb.from("projects").delete()
+        .eq("id",project.id).eq("user_id",user.id).select("id").single();
+      if(projectDelete.error) throw new Error("Supabase no permitió eliminar el proyecto: "+formatSupabaseError(projectDelete.error));
+      if(!projectDelete.data?.id) throw new Error("No se confirmó la eliminación del proyecto.");
+
+      await loadProjects();
+      message("project-message",'Proyecto "'+project.name+'" y sus archivos vinculados eliminados correctamente.');
+    } catch(error) {
+      message("project-message","No se pudo completar la eliminación: "+formatSupabaseError(error),true);
+      try { await loadProjects(); } catch(_) {}
+    } finally {
+      if(button) button.disabled=false;
+    }
+  }
+
   async function uploadAsset() {
     try {
       const file=$("asset-file").files[0], projectId=$("asset-project").value;
