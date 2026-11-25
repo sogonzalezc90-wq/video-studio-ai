@@ -1,0 +1,23 @@
+VIDEO STUDIO AI 0.2 — LISTA DE PUBLICACIÓN
+
+ANTES DE EMPEZAR
+[ ] Descargar y conservar una copia del repositorio actual.
+[ ] Abrir el repositorio privado de GitHub conectado a Cloudflare Pages.
+
+ACTUALIZAR ARCHIVOS
+[ ] Sustituir el contenido del proyecto por el contenido de esta carpeta.
+[ ] Verificar que public/ y functions/ estén en la raíz del repositorio.
+[ ] No modificar Supabase ni ejecutar SQL: esta versión no requiere cambios de tablas.
+[ ] No pegar claves secretas ni service_role en archivos.
+[ ] Confirmar los cambios en GitHub (commit/push).
+
+COMPROBACIÓN
+[ ] Esperar el despliegue en Cloudflare Pages.
+[ ] Abrir la URL de VIDEO STUDIO AI e iniciar sesión.
+[ ] Crear un proyecto de prueba con un prompt de al menos 30 caracteres.
+[ ] Verificar que aparezca en Biblioteca.
+[ ] Cargar una imagen de referencia si se desea.
+[ ] Pulsar “Comprobar conexión”. Debe indicar “Motor pendiente de conexión”.
+
+IMPORTANTE
+Esta versión organiza y guarda prompts; todavía no genera videos MP4. La siguiente fase conecta el motor de procesamiento gratuito y requiere una prueba real antes de habilitar el botón de generación. No se requieren pagos ni créditos en esta versión.

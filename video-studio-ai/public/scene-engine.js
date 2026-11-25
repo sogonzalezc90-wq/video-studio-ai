@@ -1,0 +1,268 @@
+(() => {
+  "use strict";
+
+  const RULES = [
+    {type:"car",label:"Automóvil / motor",re:/\b(auto|autom[oó]vil|coche|carro|veh[ií]culo|motor|circuito|carrera|pista|acelera|frena|neum[aá]tic)/i},
+    {type:"motorcycle",label:"Motocicleta",re:/\b(moto|motocicleta|motociclista)\b/i},
+    {type:"rain",label:"Lluvia / tormenta",re:/\b(lluvia|llueve|tormenta|llovizna|trueno|rel[aá]mpago)\b/i},
+    {type:"wind",label:"Viento / exterior",re:/\b(viento|ventisca|bosque|[aá]rboles|monta[nñ]a|desierto|azotea|amanecer)\b/i},
+    {type:"footsteps",label:"Pasos",re:/\b(caminar|camina|camin[oó]|pasos|corre|corriendo|huye|entr[oó]|sale)\b/i},
+    {type:"workshop",label:"Taller / herramientas",re:/\b(taller|reparando|reparar|herramientas|llave|soldar|mec[aá]nic)\b/i},
+    {type:"door",label:"Puerta / interior",re:/\b(puerta|abre|abri[oó]|cerr[oó]|habitaci[oó]n|cuarto|casa|oficina)\b/i},
+    {type:"impact",label:"Golpe / acción",re:/\b(golpe|disparo|explosi[oó]n|cae|rompe|choque|pelea|frenada)\b/i},
+    {type:"night",label:"Noche / suspenso",re:/\b(noche|oscuro|sombra|misterio|miedo|suspenso|silencio|terror)\b/i}
+  ];
+
+  const DIALOGUE = /^\s*([\p{L}][\p{L}\p{M} .'-]{0,35})\s*:\s*(.+)$/u;
+  const SCENE = /^\s*(?:#{1,6}\s*)?(?:ESCENA\s+\d+\s*[—–:.-]?\s*|)([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9 .,'’_-]{2,55})\s*$/;
+  const SHOT = /^\s*TOMA\s+(\d+(?:\.\d+)*)\s*(?:[—–:.-]\s*)?(.*)$/i;
+  const DURATION = /(?:duraci[oó]n|duration)\s*:\s*(\d+(?:[.,]\d+)?)\s*(segundos?|seg|s|minutos?|min)?/i;
+
+  function secondsFrom(text) {
+    const m=String(text||"").match(DURATION);
+    if(!m) return null;
+    const n=Number(m[1].replace(",",".")),u=(m[2]||"segundos").toLowerCase();
+    return u.startsWith("min")?n*60:n;
+  }
+  function classify(text) {
+    const types=RULES.filter(x=>x.re.test(text)).map(x=>x.type);
+    const mood=types.includes("night")||types.includes("impact")?"suspenso":
+      types.includes("car")?"accion":types.includes("rain")?"melancolia":
+      types.includes("workshop")||types.includes("wind")?"drama":"cinematografico";
+    return {types,labels:RULES.filter(x=>types.includes(x.type)).map(x=>x.label),mood};
+  }
+  function parseDialogue(line) {
+    const value=String(line||"").trim();
+    if(!value||/^(?:sin diálogo|sin dialogo|no hay diálogo|no hay dialogo)\.?$/i.test(value)) return null;
+    // Accept screenplay forms such as "Diálogo: KIYOSHIMA (voz grave): «…»".
+    const prefixed=value.match(/^(?:diálogo|dialogo)\s*:\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*:\s*[«“"]?(.+?)[»”"]?$/iu);
+    const direct=value.match(/^([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*:\s*[«“"]?(.+?)[»”"]?$/u);
+    const m=prefixed||direct;
+    if(!m) return null;
+    const character=m[1].trim().replace(/\s+/g," ");
+    const text=m[2].trim().replace(/[»”"]+$/,"").replace(/^[«“"]+/,"").trim();
+    if(/^(duraci[oó]n|formato|resoluci[oó]n|estilo|escena|toma|audio)$/i.test(character)) return null;
+    if(text.length<2||/^(?:sin diálogo|sin dialogo)$/i.test(text))return null;
+    return {character,text};
+  }
+  function analyze(input) {
+    const rawText=String(input||"").trim();
+    const lines=rawText.split(/\r?\n/);
+    const scenes=[];
+    let scene=null,shot=null,globalInstructions=[],seenScene=false,pendingDialogues=[];
+    const makeScene=(title,number)=>{
+      const s={id:scenes.length+1,number:String(number??scenes.length+1),title:(title||"Escena "+(scenes.length+1)).trim(),
+        description:"",duration:null,shots:[],dialogues:[],types:[],labels:[],mood:"cinematografico"};
+      scenes.push(s);scene=s;shot=null;pendingDialogues=[];return s;
+    };
+    const addLine=(target,line)=>{
+      if(target&&line.trim()) target.description+=(target.description?"\n":"")+line.trim();
+    };
+
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i],trim=line.trim();
+      if(!trim){if(scene&&shot)addLine(shot,"");continue;}
+      const sm=trim.match(/^(?:#{1,6}\s*)?(?:\d+\.\s*)?(?:GUION[^\n]*?—\s*)?ESCENA\s+(\d+)\s*(?:[—–:.-]\s*)?(.*)$/i);
+      if(sm){seenScene=true;makeScene(sm[2]||"Escena "+sm[1],sm[1]);continue;}
+      const tm=trim.match(SHOT);
+      if(tm){
+        seenScene=true;
+        const parent=tm[1].split(".")[0];
+        if(!scene||scene.number!==parent) makeScene("Escena "+parent,parent);
+        const inlineDuration=tm[2].match(/\((\d+(?:[.,]\d+)?)\s*(segundos?|seg|s|minutos?|min)\)/i);
+        const title=tm[2].replace(/\s*\(\d+(?:[.,]\d+)?\s*(?:segundos?|seg|s|minutos?|min)\)\s*/i,"").trim();
+        shot={number:tm[1],title:title||"Toma "+tm[1],description:"",duration:inlineDuration?Number(inlineDuration[1].replace(",","."))*(inlineDuration[2].toLowerCase().startsWith("min")?60:1):null,dialogues:pendingDialogues.splice(0)};
+        scene.shots.push(shot);continue;
+      }
+      if(!scene){
+        const heading=trim.match(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9 .,'’_-]{2,55})$/);
+        if(heading && !/^(EL|LA|LOS|LAS|UN|UNA|DURACIÓN|FORMATO|RESOLUCIÓN)\b/.test(heading[1])) {
+          if(i===0 || /^(EL|LA|LOS|LAS)\s/.test(heading[1])) {makeScene(heading[1],scenes.length+1);seenScene=true;continue;}
+        }
+        globalInstructions.push(line);continue;
+      }
+      const d=secondsFrom(trim);
+      if(d!==null){if(shot)shot.duration=d;else if(scene&&!/duraci[oó]n\s+total/i.test(trim))scene.duration=d;continue;}
+      const dialogue=parseDialogue(trim);
+      if(dialogue){scene.dialogues.push(dialogue);if(shot)shot.dialogues.push(dialogue);else pendingDialogues.push(dialogue);}
+      addLine(shot||scene,trim);
+    }
+
+    if(!scenes.length&&rawText){
+      const chunks=rawText.split(/\n(?=[A-ZÁÉÍÓÚÑ][^\n]{2,60}\n)/);
+      chunks.forEach((chunk,i)=>{const s=makeScene("Escena "+(i+1),i+1);s.description=chunk.trim();});
+    }
+    scenes.forEach(s=>{
+      const shotText=s.shots.map(x=>x.title+"\n"+x.description).join("\n\n");
+      const text=[s.description,shotText].filter(Boolean).join("\n\n");
+      const c=classify(text);s.types=c.types;s.labels=c.labels;s.mood=c.mood;
+      if(s.duration===null&&s.shots.length&&s.shots.every(x=>x.duration!==null))
+        s.duration=s.shots.reduce((n,x)=>n+x.duration,0);
+      if(!s.shots.length) s.shots=[{number:s.number+".1",title:s.title,description:s.description,duration:s.duration,dialogues:s.dialogues.slice()}];
+    });
+    const hasDialogue=scenes.some(s=>s.dialogues.length);
+    const shotsTotal=scenes.reduce((n,s)=>n+s.shots.length,0);
+    const counts={};scenes.forEach(s=>s.types.forEach(t=>counts[t]=(counts[t]||0)+1));
+    return {scenes,total:scenes.length,shotsTotal,hasDialogue,counts,globalInstructions:globalInstructions.join("\n").trim(),rawText,hasStructure:seenScene};
+  }
+
+  function buildImagePrompt(shot,globalInstructions="",characters=[]) {
+    const text=[shot?.title,shot?.description].filter(Boolean).join(". ");
+    const context=[globalInstructions,...characters].filter(Boolean).join(". ");
+    const vehicle=/\b(autom[oó]vil|coche|carro|auto|veh[ií]culo)\b/i.test(text);
+    const motorcycle=/\b(moto|motocicleta)\b/i.test(text);
+    const subjectRule=vehicle&&!motorcycle
+      ?"REGLA DE OBJETO OBLIGATORIA: mostrar un AUTOMÓVIL de cuatro ruedas, claramente reconocible. NO mostrar motocicletas, bicicletas ni scooters. El automóvil debe ser el vehículo principal si la acción lo requiere."
+      :motorcycle?"Mostrar una motocicleta únicamente porque el guion la solicita.":"Respetar literalmente los objetos y acciones descritos; no sustituir vehículos ni personajes.";
+    return [
+      "Fotograma cinematográfico realista, composición profesional, formato panorámico 16:9, iluminación física coherente, detalle alto, profundidad de campo natural.",
+      "ACCIÓN DE ESTA TOMA: "+text,
+      context?"CONTINUIDAD Y DIRECCIÓN DE ARTE: "+context:"",
+      subjectRule,
+      "Continuidad estricta: conservar edad, rostro, peinado, ropa y complexión de cada personaje entre tomas. Una sola escena coherente, sin collage, sin paneles, sin texto, sin subtítulos, sin marcas de agua."
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function noiseBuffer(ctx,seconds=2){
+    const length=Math.max(1,Math.floor(ctx.sampleRate*seconds)),b=ctx.createBuffer(1,length,ctx.sampleRate),d=b.getChannelData(0);
+    for(let i=0;i<length;i++)d[i]=Math.random()*2-1;
+    return b;
+  }
+  function tone(ctx,dest,when,freq,dur,wave="sine",vol=.04,endFreq=null){
+    if(dur<=0)return;
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=wave;o.frequency.setValueAtTime(Math.max(1,freq),when);
+    if(endFreq)o.frequency.exponentialRampToValueAtTime(Math.max(1,endFreq),when+dur);
+    g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(vol,when+Math.min(.08,dur/3));
+    g.gain.setValueAtTime(vol,when+dur*.65);g.gain.exponentialRampToValueAtTime(.0001,when+dur);
+    o.connect(g);g.connect(dest);o.start(when);o.stop(when+dur+.02);
+  }
+  function noise(ctx,dest,when,dur,vol=.02,filterType="lowpass",freq=900){
+    const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+    src.buffer=noiseBuffer(ctx,Math.max(.2,dur));f.type=filterType;f.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,when);g.gain.linearRampToValueAtTime(vol,when+.25);
+    g.gain.setValueAtTime(vol,when+Math.max(.26,dur-.3));g.gain.linearRampToValueAtTime(.0001,when+dur);
+    src.connect(f);f.connect(g);g.connect(dest);src.start(when);src.stop(when+dur);
+  }
+  function buildAudio(ctx,destination,duration,analysis){
+    const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain();
+    master.gain.value=.7;music.gain.value=.1;music.connect(master);master.connect(destination);
+    const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
+    const notes=mood==="suspenso"?[55,65.41,82.41]:mood==="accion"?[73.42,110,146.83]:[65.41,98,130.81];
+    const oscillators=[];
+    notes.forEach((hz,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type="triangle";o.frequency.value=hz;f.type="lowpass";f.frequency.value=360;g.gain.value=i===0?.16:.07;o.connect(f);f.connect(g);g.connect(music);o.start(start);oscillators.push(o);});
+    const span=duration/Math.max(1,analysis.scenes.length);
+    analysis.scenes.forEach((s,i)=>{
+      const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
+      if(s.types.includes("car")){tone(ctx,master,when,58,len,"sawtooth",.075,135);tone(ctx,master,when+.3,950,.18,"sine",.025,400);}
+      if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
+      if(s.types.includes("rain"))noise(ctx,master,when,len,.035,"highpass",1100);
+      if(s.types.includes("wind"))noise(ctx,master,when,len,.022,"lowpass",380);
+      if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,72+(k%2)*16,.12,"triangle",.025,38);
+      if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
+      if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
+      if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
+      if(s.dialogues.length){music.gain.setValueAtTime(.035,when);music.gain.setValueAtTime(.1,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
+      if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
+    });
+    return ()=>{oscillators.forEach(o=>{try{o.stop();}catch(_){}});try{master.disconnect();music.disconnect();}catch(_){}};
+  }
+
+  function audioCuesFor(scene,shot) {
+    const shotTypes=classify([shot.title,shot.description].filter(Boolean).join("\n")).types;
+    const types=new Set(shotTypes.length?shotTypes:(scene.types||[]));
+    const cueMap={
+      car:"motor_automovil",
+      motorcycle:"motor_motocicleta",
+      rain:"lluvia",
+      wind:"viento_ambiente",
+      footsteps:"pasos",
+      workshop:"herramientas_taller",
+      door:"puerta",
+      impact:"impacto",
+      night:"ambiente_suspenso"
+    };
+    return [...types].map(type=>cueMap[type]).filter(Boolean);
+  }
+
+  function buildProductionPlan(analysis,totalSeconds=1200,segmentSeconds=15) {
+    const sourceScenes=Array.isArray(analysis?.scenes)?analysis.scenes:[];
+    const targetSeconds=Math.round(Number(totalSeconds)||1200);
+    const segmentDuration=Number(segmentSeconds)===30?30:15;
+    if(targetSeconds<15||targetSeconds>1200||targetSeconds%segmentDuration!==0)
+      throw new Error("La duración de la película debe ser de 15 segundos a 20 minutos y divisible entre "+segmentDuration+".");
+    if(!sourceScenes.length) return {targetSeconds,maxSegmentSeconds:segmentDuration,totalSegments:0,scenes:0,segments:[]};
+
+    const sceneWeights=sourceScenes.map(scene=>{
+      const shots=(scene.shots||[]);
+      const shotTotal=shots.reduce((sum,shot)=>sum+(Number(shot.duration)>0?Number(shot.duration):0),0);
+      return Number(scene.duration)>0?Number(scene.duration):shotTotal>0?shotTotal:Math.max(1,shots.length);
+    });
+    const sceneTotal=sceneWeights.reduce((sum,value)=>sum+value,0)||sourceScenes.length;
+    let sceneCursor=0;
+    const sceneRanges=sourceScenes.map((scene,index)=>{
+      const duration=index===sourceScenes.length-1?targetSeconds-sceneCursor:targetSeconds*sceneWeights[index]/sceneTotal;
+      const start=sceneCursor;sceneCursor+=duration;
+      const shots=Array.isArray(scene.shots)&&scene.shots.length?scene.shots:[{
+        number:String(scene.number||index+1)+".1",title:scene.title||"Toma principal",
+        description:scene.description||"",duration:null,dialogues:scene.dialogues||[]
+      }];
+      const shotWeights=shots.map(shot=>Number(shot.duration)>0?Number(shot.duration):1);
+      const shotTotal=shotWeights.reduce((sum,value)=>sum+value,0)||shots.length;
+      let shotCursor=start;
+      const shotRanges=shots.map((shot,shotIndex)=>{
+        const shotDuration=shotIndex===shots.length-1?start+duration-shotCursor:duration*shotWeights[shotIndex]/shotTotal;
+        const range={shot,start:shotCursor,end:shotCursor+shotDuration,index:shotIndex};
+        shotCursor+=shotDuration;return range;
+      });
+      return {scene,start,end:start+duration,index,shotRanges};
+    });
+
+    const segments=[];
+    const totalSegments=targetSeconds/segmentDuration;
+    for(let index=0;index<totalSegments;index++){
+      const startSeconds=index*segmentDuration,endSeconds=startSeconds+segmentDuration;
+      const midpoint=(startSeconds+endSeconds)/2;
+      const overlappingScenes=sceneRanges.filter(range=>range.start<endSeconds&&range.end>startSeconds);
+      const primaryScene=overlappingScenes.find(range=>midpoint>=range.start&&midpoint<range.end)||overlappingScenes[0];
+      const overlappingShots=overlappingScenes.flatMap(range=>range.shotRanges
+        .filter(shotRange=>shotRange.start<endSeconds&&shotRange.end>startSeconds)
+        .map(shotRange=>({sceneRange:range,shotRange})));
+      const primaryShot=overlappingShots.find(item=>midpoint>=item.shotRange.start&&midpoint<item.shotRange.end)||overlappingShots[0];
+      if(!primaryScene||!primaryShot)throw new Error("No fue posible asignar escenas y tomas al segmento "+(index+1)+".");
+      const scene=primaryScene.scene,shot=primaryShot.shotRange.shot;
+      const promptDescription=overlappingShots.map(({sceneRange,shotRange})=>{
+        const currentScene=sceneRange.scene,currentShot=shotRange.shot;
+        return (currentScene.title||"Escena")+" — "+(currentShot.title||"Toma")+": "+(currentShot.description||currentScene.description||"");
+      }).join("\\n");
+      const promptTitle=overlappingShots.map(({shotRange})=>shotRange.shot.title||"Toma").join(" / ");
+      const shotForPrompt={title:promptTitle,description:promptDescription};
+      const visualPrompt=buildImagePrompt(shotForPrompt,analysis.globalInstructions||"");
+      const dialogues=[];
+      overlappingShots.forEach(({sceneRange,shotRange})=>{
+        const currentShot=shotRange.shot;
+        const shotDialogues=(Array.isArray(currentShot.dialogues)&&currentShot.dialogues.length?currentShot.dialogues:
+          sceneRange.shotRanges.length===1?(sceneRange.scene.dialogues||[]):[]);
+        const dialogueCenter=(shotRange.start+shotRange.end)/2;
+        if(dialogueCenter>=startSeconds&&dialogueCenter<endSeconds)
+          shotDialogues.forEach(line=>dialogues.push({character:line.character,text:line.text,atSeconds:Math.max(0,dialogueCenter-startSeconds)}));
+      });
+      const audioCues=[...new Set(overlappingShots.flatMap(({sceneRange,shotRange})=>
+        audioCuesFor(sceneRange.scene,{title:shotRange.shot.title||"Toma",description:shotRange.shot.description||sceneRange.scene.description||""})
+      ))];
+      const sceneTypes=[...new Set(overlappingScenes.flatMap(range=>range.scene.types||[]))];
+      segments.push({
+        id:index+1,sceneIndex:primaryScene.index,shotIndex:primaryShot.shotRange.index,
+        sceneNumber:String(scene.number||primaryScene.index+1),sceneTitle:scene.title||"Escena "+(primaryScene.index+1),
+        shotNumber:String(shot.number||(primaryScene.index+1)+"."+(primaryShot.shotRange.index+1)),
+        shotTitle:overlappingShots.length>1?promptTitle:(shot.title||"Toma "+(shot.number||1)),
+        shotDescription:promptDescription,visualPrompt,
+        dialogues,audioCues,sceneTypes,mood:scene.mood||"cinematografico",
+        part:1,durationSeconds:segmentDuration,startSeconds,endSeconds
+      });
+    }
+    return {targetSeconds,maxSegmentSeconds:segmentDuration,totalSegments:segments.length,scenes:sourceScenes.length,segments};
+  }
+
+  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan};
+})();

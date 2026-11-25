@@ -1,0 +1,45 @@
+name: Validate VIDEO STUDIO AI
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "video-studio-ai/**"
+      - ".github/workflows/validate.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "video-studio-ai/**"
+      - ".github/workflows/validate.yml"
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check browser JavaScript syntax
+        run: |
+          node --check video-studio-ai/public/app.js
+          node --check video-studio-ai/public/scene-engine.js
+          node --check video-studio-ai/public/production-engine.js
+          node --check video-studio-ai/public/motion-engine.js
+          node --check video-studio-ai/public/film-renderer.js
+          node --check video-studio-ai/public/production-ui.js
+          node --check video-studio-ai/public/video-maker.js
+      - name: Check Cloudflare Pages Function syntax
+        run: node --input-type=module --check < video-studio-ai/functions/api/jobs.js
+      - name: Run JavaScript contract tests
+        run: npm test
+        working-directory: video-studio-ai
+      - name: Compile Kaggle worker and audio pipeline
+        run: |
+          python -m py_compile video-studio-ai/worker/kaggle_supabase_worker.py
+          python -m py_compile video-studio-ai/worker/audio_pipeline.py
+      - name: Validate Kaggle notebooks
+        run: |
+          python -m json.tool video-studio-ai/notebooks/wan22_kaggle_free.ipynb > /dev/null
+          python -m json.tool video-studio-ai/notebooks/VIDEO_STUDIO_AI_Wan22_Supabase_Worker.ipynb > /dev/null
