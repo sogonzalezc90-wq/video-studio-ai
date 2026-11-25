@@ -344,7 +344,7 @@ export async function onRequestPost({request,env}) {
       form.set("width","1024");
       form.set("height","576");
       for(let index=0;index<referenceImages.length;index++){
-        const encoded=String(referenceImages[index]||"").replace(/^data:image\\/[^;]+;base64,/i,"");
+        const encoded=String(referenceImages[index]||"").replace(/^data:image\/[^;]+;base64,/i,"");
         if(!encoded||encoded.length>900000||!/^[A-Za-z0-9+/=]+$/.test(encoded))
           return json({ok:false,error:"invalid_reference_image",message:"Una referencia visual está vacía o supera el tamaño permitido."},400);
         const binary=atob(encoded);
