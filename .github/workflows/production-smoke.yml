@@ -1,0 +1,69 @@
+name: Verify VIDEO STUDIO AI production
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "video-studio-ai/public/**"
+      - ".github/workflows/production-smoke.yml"
+  workflow_dispatch:
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for Cloudflare Pages production deployment and verify project lifecycle
+        env:
+          PRODUCTION_URL: https://video-studio-ai.pages.dev
+        run: |
+          node <<'NODE'
+          const base = process.env.PRODUCTION_URL.replace(/\/$/, "");
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          let last = "No response yet";
+          for (let attempt = 1; attempt <= 40; attempt++) {
+            try {
+              const page = await fetch(base + "/?v=20261125-4", { cache: "no-store" });
+              const html = await page.text();
+              if (!page.ok || !html.includes("/app.js?v=20261125-4")) {
+                last = "Production HTML has not switched to project lifecycle build (HTTP " + page.status + ")";
+                throw new Error(last);
+              }
+              const apiResponse = await fetch(base + "/api/jobs", { cache: "no-store" });
+              const api = await apiResponse.json();
+              const diagnostics = api.diagnostics || {};
+              if (!apiResponse.ok || !api.ok) {
+                last = "Pages Function /api/jobs is not healthy (HTTP " + apiResponse.status + ")";
+                throw new Error(last);
+              }
+              if (!diagnostics.AI || !diagnostics.SUPABASE_URL || !diagnostics.SUPABASE_ANON_KEY) {
+                last = "Missing production bindings: " + JSON.stringify(diagnostics);
+                throw new Error(last);
+              }
+              const appResponse = await fetch(base + "/app.js?v=20261125-4", { cache: "no-store" });
+              const app = await appResponse.text();
+              if (!appResponse.ok || !app.includes("Eliminar proyecto") ||
+                  !app.includes("Proyecto creado, guardado y verificado en tu biblioteca")) {
+                last = "Production app.js does not contain the verified project create/delete lifecycle";
+                throw new Error(last);
+              }
+              console.log("PRODUCTION VERIFIED");
+              console.log(JSON.stringify({
+                page: page.status,
+                function: apiResponse.status,
+                workersAI: diagnostics.AI,
+                supabaseUrl: diagnostics.SUPABASE_URL,
+                supabasePublishableKey: diagnostics.SUPABASE_ANON_KEY,
+                projectCreateAndDeleteCode: true
+              }, null, 2));
+              process.exit(0);
+            } catch (error) {
+              last = error.message;
+              console.log("Attempt " + attempt + "/40: " + last);
+              if (attempt < 40) await sleep(15000);
+            }
+          }
+          throw new Error("Production verification did not pass after 10 minutes: " + last);
+          NODE
