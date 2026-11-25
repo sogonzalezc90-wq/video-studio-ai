@@ -11,7 +11,7 @@
     approved:["rendering"],
     failed:["planned","assets_ready","rendering"]
   };
-  const VOICES=["claude","ald"];
+  const VOICES=["alvaro","sirio","nestor","carina","celeste","diana","aquila","selena","estrella","javier"];
 
   function createManifest(analysis,options={}) {
     if(!window.VSASceneEngine) throw new Error("El analizador de escenas no está disponible.");
