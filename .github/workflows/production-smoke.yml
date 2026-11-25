@@ -19,38 +19,25 @@ jobs:
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
         run: |
-          node <<'NODE'
-          const base = process.env.PRODUCTION_URL.replace(/\/$/, "");
-          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-          const fetchLive = url => fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
-          let last = "No response yet";
-          for (let attempt = 1; attempt <= 24; attempt++) {
-            try {
-              const page = await fetchLive(base + "/?v=20261125-5");
-              const html = await page.text();
-              if (!page.ok || !html.includes("/app.js?v=20261125-5")) {
-                last = "Production HTML has not switched to project lifecycle build (HTTP " + page.status + ")";
-                throw new Error(last);
-              }
-              const appResponse = await fetchLive(base + "/app.js?v=20261125-5");
-              const app = await appResponse.text();
-              if (!appResponse.ok || !app.includes("Eliminar proyecto") ||
-                  !app.includes("Proyecto creado, guardado y verificado en tu biblioteca")) {
-                last = "Production app.js does not contain the verified project create/delete lifecycle";
-                throw new Error(last);
-              }
-              console.log("PRODUCTION VERIFIED");
-              console.log(JSON.stringify({
-                productionHtml: page.status,
-                productionAppJs: appResponse.status,
-                projectCreateAndDeleteCode: true
-              }, null, 2));
-              process.exit(0);
-            } catch (error) {
-              last = error.message;
-              console.log("Attempt " + attempt + "/24: " + last);
-              if (attempt < 24) await sleep(10000);
-            }
-          }
-          throw new Error("Production verification did not pass after 7 minutes: " + last);
-          NODE
+          set -euo pipefail
+          for attempt in $(seq 1 24); do
+            if html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=20261125-5"); then
+              if ! grep -q '/app.js?v=20261125-5' <<< "$html"; then
+                echo "Attempt $attempt/24: production HTML is not on the current project lifecycle build"
+              elif app=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/app.js?v=20261125-5"); then
+                if grep -q 'Eliminar proyecto' <<< "$app" && grep -q 'Proyecto creado, guardado y verificado en tu biblioteca' <<< "$app"; then
+                  echo "PRODUCTION VERIFIED"
+                  echo "Cloudflare Pages serves the project create/save/verify/delete code."
+                  exit 0
+                fi
+                echo "Attempt $attempt/24: deployed app.js is missing project lifecycle code"
+              else
+                echo "Attempt $attempt/24: app.js is not reachable yet"
+              fi
+            else
+              echo "Attempt $attempt/24: production page is not reachable yet"
+            fi
+            if [ "$attempt" -lt 24 ]; then sleep 10; fi
+          done
+          echo "Production verification did not pass after 7 minutes."
+          exit 1
