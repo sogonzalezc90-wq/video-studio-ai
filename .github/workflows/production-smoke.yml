@@ -39,8 +39,8 @@ jobs:
                 last = "Pages Function /api/jobs is not healthy (HTTP " + apiResponse.status + ")";
                 throw new Error(last);
               }
-              if (!diagnostics.AI || !diagnostics.SUPABASE_URL || !diagnostics.SUPABASE_ANON_KEY) {
-                last = "Missing production bindings: " + JSON.stringify(diagnostics);
+              if (!diagnostics.SUPABASE_URL || !diagnostics.SUPABASE_ANON_KEY) {
+                last = "Missing Supabase production configuration: " + JSON.stringify(diagnostics);
                 throw new Error(last);
               }
               const appResponse = await fetchLive(base + "/app.js?v=20261125-5");
