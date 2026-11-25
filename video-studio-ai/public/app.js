@@ -288,16 +288,33 @@
         throw new Error("Este proyecto tiene "+activeJobs.length+" trabajo(s) de video en espera o en proceso. Cancélalos y espera a que terminen antes de eliminar el proyecto.");
 
       const assetPaths=[...new Set((assetsResult.data||[]).map(asset=>asset.storage_path).filter(Boolean))];
-      const renderPaths=[...new Set((jobsResult.data||[]).map(job=>job.output_path).filter(Boolean))];
+      const renderPaths=new Set((jobsResult.data||[]).map(job=>job.output_path).filter(Boolean));
+      const renderBucket=sb.storage.from("video-renders");
+      // Wan 2.2 also stores continuity/master frames below user_id/job_id/continuity.
+      // Collect every nested object for each job, not only the final MP4.
+      for(const job of jobsResult.data||[]){
+        const pendingFolders=[user.id+"/"+job.id];
+        while(pendingFolders.length){
+          const folder=pendingFolders.pop();
+          const {data:entries,error:listError}=await renderBucket.list(folder,{limit:1000});
+          if(listError) throw new Error("No se pudieron enumerar los archivos de video del proyecto: "+formatSupabaseError(listError));
+          for(const entry of entries||[]){
+            const objectPath=folder+"/"+entry.name;
+            if(entry.id||entry.metadata) renderPaths.add(objectPath);
+            else pendingFolders.push(objectPath);
+          }
+        }
+      }
       const removeInBatches=async(bucket,paths)=>{
-        for(let offset=0;offset<paths.length;offset+=100){
-          const batch=paths.slice(offset,offset+100);
+        const unique=[...new Set(paths)];
+        for(let offset=0;offset<unique.length;offset+=100){
+          const batch=unique.slice(offset,offset+100);
           const {error}=await sb.storage.from(bucket).remove(batch);
           if(error) throw new Error("No se pudieron eliminar todos los archivos de "+bucket+": "+formatSupabaseError(error));
         }
       };
       await removeInBatches("video-assets",assetPaths);
-      await removeInBatches("video-renders",renderPaths);
+      await removeInBatches("video-renders",[...renderPaths]);
 
       const jobsDelete=await sb.from("video_jobs").delete()
         .eq("project_id",project.id).eq("user_id",user.id).select("id");
