@@ -30,6 +30,6 @@ test("the studio exposes a selectable Spanish dialogue voice", () => {
 
 
 test("Create Video runs the long-film preparation workflow instead of directly clicking the queue", () => {
-  assert.match(source, /VSAEnsureFilmReadyAndQueue/);
-  assert.match(source, /await window\.VSAEnsureFilmReadyAndQueue\(\)/);
+  assert.match(maker, /VSAEnsureFilmReadyAndQueue/);
+  assert.match(maker, /await window\.VSAEnsureFilmReadyAndQueue\(\)/);
 });
