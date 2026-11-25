@@ -15,8 +15,10 @@ test("project cards expose an owner-scoped delete action", () => {
 
 test("project deletion protects active video jobs and removes related private media", () => {
   assert.match(app, /new Set\(\["queued","processing","assembling","cancelling"\]\)/);
-  assert.match(app, /storage\.from\("video-assets"\)\.remove/);
-  assert.match(app, /storage\.from\("video-renders"\)\.remove/);
+  assert.match(app, /storage\\.from\\(bucket\\)\\.remove/);
+  assert.match(app, /removeInBatches\\("video-assets",assetPaths\\)/);
+  assert.match(app, /removeInBatches\\("video-renders",\\[\.\.\.renderPaths\\]\)/);
+  assert.match(app, /renderBucket\\.list\\(folder,\\{limit:1000\\}\\)/);
   assert.match(app, /from\("video_jobs"\)\.delete\(\)/);
   assert.match(app, /from\("production_manifests"\)\.delete\(\)/);
   assert.match(app, /from\("project_assets"\)\.delete\(\)/);
