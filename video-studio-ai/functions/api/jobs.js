@@ -356,7 +356,23 @@ export async function onRequestPost({request,env}) {
       const multipartType=multipartRequest.headers.get("content-type");
       result=await env.AI.run(IMAGE_MODEL,{multipart:{body:multipartRequest.body,contentType:multipartType}});
     }else{
-      result=await env.AI.run(IMAGE_MODEL,{prompt:strengthenPrompt(prompt),width:1024,height:576});
+      // FLUX.2 Klein 4B accepts multipart input only, including text-to-image.
+      // Sending a plain JSON object here is rejected by Workers AI and leaves
+      // the image button apparently doing nothing.
+      const form=new FormData();
+      form.set("prompt",strengthenPrompt(prompt));
+      form.set("width","1024");
+      form.set("height","576");
+      const multipartRequest=new Request("https://video-studio-ai.invalid/flux-text-generation",{
+        method:"POST",
+        body:form
+      });
+      result=await env.AI.run(IMAGE_MODEL,{
+        multipart:{
+          body:multipartRequest.body,
+          contentType:multipartRequest.headers.get("content-type")
+        }
+      });
     }
     if(!result||typeof result.image!=="string"||!result.image.length)
       return json({ok:false,error:"empty_model_response",message:"El modelo no devolvió una imagen. No se realizó ningún cargo alternativo."},502);
