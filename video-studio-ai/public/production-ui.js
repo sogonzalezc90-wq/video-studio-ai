@@ -164,9 +164,11 @@
     generationRow.className="segment-generation-controls";
     const generateImagesButton=document.createElement("button");
     generateImagesButton.type="button";
+    generateImagesButton.id="production-generate-images-btn";
     generateImagesButton.className="primary";
     generateImagesButton.textContent="Generar fotogramas de segmentos pendientes";
     const generationStatus=addText(generationRow,"p","Genera una imagen maestra por segmento con hasta cuatro referencias reales del proyecto (personajes, imágenes o fotogramas de video). Se guarda en Supabase antes de animarla con Wan 2.2.","hint");
+    generationStatus.id="production-generation-status";
     generateImagesButton.addEventListener("click",async()=>{
       try{await generateSegmentImages(manifest,generateImagesButton,generationStatus);render(manifest);}
       catch(error){generationStatus.textContent=error.message;}
@@ -271,6 +273,7 @@
         durationSeconds,maxSegmentSeconds:segmentSeconds,projectId:project.value,
         title:projectName+" · "+modeLabel
       });
+      manifest.storyText=story;
       if(!manifest.totalSegments)throw new Error("No se detectaron escenas para construir segmentos.");
       window.VSAProductionEngine.resolveContinuity(manifest);
       await window.VSAProductionEngine.saveManifest(manifest);
@@ -278,6 +281,59 @@
       render(manifest);
     }catch(error){panel.textContent="No se pudo preparar el manifiesto: "+error.message;}
   }
+  // Entry point used by the main Create Video button for productions over 30 seconds.
+  // It builds/restores the manifest, generates every missing master frame, then submits
+  // the job. The daily free image cap is respected; already-saved frames remain resumable.
+  window.VSAEnsureFilmReadyAndQueue=async function(){
+    const story=$("video-story")?.value.trim()||"";
+    const project=$("generation-project");
+    const duration=Number(videoDurationSelect?.value)||0;
+    const segmentSeconds=Number(segmentDurationSelect?.value)===30?30:15;
+    if(story.length<30)throw new Error("Escribe una historia de al menos 30 caracteres.");
+    if(!project?.value)throw new Error("Selecciona primero un proyecto destino.");
+    if(!Number.isInteger(duration)||duration<=30||duration>1200||duration%segmentSeconds!==0)
+      throw new Error("Selecciona una duración superior a 30 segundos y divisible entre segmentos de "+segmentSeconds+" segundos.");
+
+    let manifest=window.VSAActiveManifest;
+    const compatible=manifest
+      &&manifest.projectId===project.value
+      &&Number(manifest.targetSeconds)===duration
+      &&Number(manifest.maxSegmentSeconds)===segmentSeconds
+      &&manifest.storyText===story
+      &&Array.isArray(manifest.segments);
+    if(!compatible){
+      const analysis=window.VSASceneEngine.analyze(story);
+      const projectName=project.selectedOptions?.[0]?.textContent||"Producción";
+      manifest=window.VSAProductionEngine.createManifest(analysis,{
+        durationSeconds:duration,maxSegmentSeconds:segmentSeconds,projectId:project.value,
+        title:projectName+" · Película automática"
+      });
+      manifest.storyText=story;
+      if(!manifest.totalSegments)throw new Error("No se detectaron escenas para construir segmentos.");
+      window.VSAProductionEngine.resolveContinuity(manifest);
+      await window.VSAProductionEngine.saveManifest(manifest);
+      window.VSAActiveManifest=manifest;
+      render(manifest);
+    }else{
+      hydrateAssetUrls(manifest);
+    }
+
+    const generateButton=$("production-generate-images-btn");
+    const status=$("production-generation-status");
+    if(!generateButton||!status)throw new Error("No se pudo preparar el panel de imágenes maestras. Actualiza la página e inténtalo de nuevo.");
+    const missing=manifest.segments.filter(segment=>!segment.assets?.image?.storagePath);
+    if(missing.length){
+      status.textContent="Preparando automáticamente "+missing.length+" fotogramas maestros. Los límites gratuitos diarios se respetan; si se agota el cupo, podrás reanudar sin repetir los ya guardados.";
+      await generateSegmentImages(manifest,generateButton,status);
+      render(manifest);
+    }
+    const stillMissing=manifest.segments.filter(segment=>!segment.assets?.image?.storagePath);
+    if(stillMissing.length)throw new Error("Todavía faltan "+stillMissing.length+" imágenes maestras. No se enviará un trabajo incompleto a Kaggle.");
+    const queueButton=$("wan-queue-submit");
+    if(!queueButton)throw new Error("No está disponible la cola Wan 2.2.");
+    queueButton.click();
+  };
+
   function syncFilmDurations(){
     if(!segmentDurationSelect||!filmDurationSelect)return;
     const segment=Number(segmentDurationSelect.value)||15;
