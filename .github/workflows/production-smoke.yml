@@ -25,9 +25,9 @@ jobs:
           let last = "No response yet";
           for (let attempt = 1; attempt <= 40; attempt++) {
             try {
-              const page = await fetch(base + "/?v=20261125-4", { cache: "no-store" });
+              const page = await fetch(base + "/?v=20261125-5", { cache: "no-store" });
               const html = await page.text();
-              if (!page.ok || !html.includes("/app.js?v=20261125-4")) {
+              if (!page.ok || !html.includes("/app.js?v=20261125-5")) {
                 last = "Production HTML has not switched to project lifecycle build (HTTP " + page.status + ")";
                 throw new Error(last);
               }
@@ -42,7 +42,7 @@ jobs:
                 last = "Missing production bindings: " + JSON.stringify(diagnostics);
                 throw new Error(last);
               }
-              const appResponse = await fetch(base + "/app.js?v=20261125-4", { cache: "no-store" });
+              const appResponse = await fetch(base + "/app.js?v=20261125-5", { cache: "no-store" });
               const app = await appResponse.text();
               if (!appResponse.ok || !app.includes("Eliminar proyecto") ||
                   !app.includes("Proyecto creado, guardado y verificado en tu biblioteca")) {
