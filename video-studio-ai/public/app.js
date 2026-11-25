@@ -73,28 +73,78 @@
     await loadProjects();
   }
   async function loadProjects() {
+    const root=$("projects-list");
     try {
-      const {data,error}=await client().from("projects").select("*").order("created_at",{ascending:false});
+      const {data,error}=await client().from("projects")
+        .select("id,name,description,created_at").order("created_at",{ascending:false});
       if(error) throw error;
       projects=data||[];
       projectNames=new Map(projects.map(project=>[project.id,project.name]));
-      $("projects-list").innerHTML="";
+      root.replaceChildren();
       $("asset-project").innerHTML='<option value="">Selecciona un proyecto</option>';
       $("generation-project").innerHTML='<option value="">Selecciona un proyecto</option>';
-      if(!projects.length) $("projects-list").innerHTML='<p class="muted">Todavía no tienes proyectos. Crea el primero.</p>';
+      if(!projects.length) root.innerHTML='<p class="muted">Todavía no tienes proyectos. Crea el primero.</p>';
       projects.forEach(p=>{
         const card=document.createElement("article"); card.className="project-card";
         const title=document.createElement("h4"); title.textContent=p.name;
         const desc=document.createElement("p"); desc.textContent=p.description||"Sin descripción";
         const date=document.createElement("small"); date.textContent=new Date(p.created_at).toLocaleDateString("es-MX");
-        card.append(title,desc,date); $("projects-list").append(card);
-        [ $("asset-project"), $("generation-project") ].forEach(select=>{
+        card.append(title,desc,date); root.append(card);
+        [$("asset-project"),$("generation-project")].forEach(select=>{
           const opt=document.createElement("option"); opt.value=p.id; opt.textContent=p.name; select.append(opt);
         });
       });
-      await loadAssets();
-      await loadWanJobs();
-    } catch(e) { message("project-message",e.message,true); }
+      // A media-library failure must never prevent projects from appearing.
+      try { await loadAssets(); }
+      catch(assetError) { message("upload-message","No se pudieron cargar los archivos: "+formatSupabaseError(assetError),true); }
+      try { await loadWanJobs(); } catch(_) {}
+      return projects;
+    } catch(e) {
+      projects=[];
+      root.replaceChildren();
+      const note=document.createElement("p");
+      note.className="message";
+      note.textContent="No se pudo consultar public.projects: "+formatSupabaseError(e);
+      root.append(note);
+      message("project-message",note.textContent,true);
+      return [];
+    }
+  }
+  function formatSupabaseError(error) {
+    if(!error) return "Error desconocido.";
+    const parts=[error.message,error.code&&("Código "+error.code),error.details,error.hint].filter(Boolean);
+    return parts.join(" · ")||String(error);
+  }
+  async function diagnoseConnection() {
+    const button=$("diagnose-btn");
+    if(button) { button.disabled=true; button.textContent="Diagnosticando…"; }
+    try {
+      const sb=client(), checks=[];
+      const sessionResult=await sb.auth.getSession();
+      if(sessionResult.error) throw sessionResult.error;
+      const session=sessionResult.data?.session;
+      checks.push(session?.user?.id?"Sesión Supabase: correcta":"Sesión Supabase: no encontrada");
+      if(session?.user?.id) {
+        const projectResult=await sb.from("projects").select("id").limit(1);
+        checks.push(projectResult.error
+          ?"Tabla projects: ERROR — "+formatSupabaseError(projectResult.error)
+          :"Tabla projects: lectura correcta");
+        const assetResult=await sb.from("project_assets").select("id").limit(1);
+        checks.push(assetResult.error
+          ?"Tabla project_assets: ERROR — "+formatSupabaseError(assetResult.error)
+          :"Tabla project_assets: lectura correcta");
+      }
+      const apiResponse=await fetch("/api/jobs",{method:"GET",cache:"no-store",headers:{Accept:"application/json"}});
+      const apiResult=await apiResponse.json().catch(()=>({}));
+      checks.push(apiResponse.ok
+        ?"Cloudflare API: responde"+(apiResult.diagnostics?" · AI="+(apiResult.diagnostics.AI?"sí":"no")+" · Supabase env="+(apiResult.diagnostics.SUPABASE_URL&&apiResult.diagnostics.SUPABASE_ANON_KEY?"sí":"no"):"")
+        :"Cloudflare API: HTTP "+apiResponse.status+" — "+(apiResult.message||apiResult.error||"sin detalle"));
+      message("project-message",checks.join(" | "),checks.some(item=>item.includes("ERROR")||item.includes("no encontrada")||item.includes("HTTP ")));
+    } catch(error) {
+      message("project-message","Diagnóstico detenido: "+formatSupabaseError(error),true);
+    } finally {
+      if(button) { button.disabled=false; button.textContent="Diagnóstico de conexión"; }
+    }
   }
   async function loadAssets() {
     const root=$("assets-list");
@@ -173,10 +223,12 @@
         {name,description,prompt:description||name,user_id:user.id},
         {name,prompt:description||name,user_id:user.id}
       ];
-      let saved=false,lastError=null;
+      let savedProject=null,lastError=null;
       for(const record of records){
-        const result=await client().from("projects").insert(record);
-        if(!result.error){saved=true;break;}
+        const result=await client().from("projects").insert(record)
+          .select("id,name,description,created_at").single();
+        if(!result.error && result.data?.id){savedProject=result.data;break;}
+        if(!result.error) throw new Error("Supabase aceptó el alta, pero no devolvió el registro creado. Revisa el permiso SELECT de public.projects.");
         lastError=result.error;
         const code=String(result.error.code||"");
         const detail=String(result.error.message||"");
@@ -184,7 +236,7 @@
           ||/column .*does not exist|could not find .*column|null value in column .*prompt|schema cache/i.test(detail);
         if(!legacySchemaMismatch)throw result.error;
       }
-      if(!saved)throw new Error(
+      if(!savedProject)throw new Error(
         "Supabase rechazó la creación incluso con compatibilidad para el esquema anterior. "
         +(lastError?.message||"Revisa las columnas de public.projects.")
         +" Ejecuta supabase/VIDEO_STUDIO_AI_PRODUCTION_UPGRADE.sql en Supabase SQL Editor."
@@ -192,7 +244,8 @@
       $("project-name").value=""; $("project-description").value="";
       message("project-message","Proyecto guardado correctamente. Actualizando biblioteca…");
       await loadProjects();
-      if(!projects.length)throw new Error("Supabase aceptó el registro, pero la biblioteca no devolvió el proyecto. Revisa las políticas RLS de public.projects.");
+      if(!projects.some(project=>project.id===savedProject.id))
+        throw new Error("Supabase creó el proyecto (ID "+savedProject.id+"), pero la consulta de biblioteca no lo devolvió. Revisa SELECT/RLS en public.projects.");
       message("project-message","Proyecto creado y confirmado en tu biblioteca.");
     } catch(e) {
       message("project-message","No se pudo crear el proyecto: "+(e.message||String(e)),true);
@@ -448,6 +501,7 @@
   $("upload-btn").addEventListener("click",uploadAsset);
   $("generate-image-btn").addEventListener("click",generateImage);
   $("refresh-btn").addEventListener("click",loadProjects);
+  $("diagnose-btn")?.addEventListener("click",diagnoseConnection);
   $("wan-queue-submit")?.addEventListener("click",submitWanJob);
   $("wan-queue-refresh")?.addEventListener("click",loadWanJobs);
   $("wan-queue-clear")?.addEventListener("click",clearFinishedWanJobs);
