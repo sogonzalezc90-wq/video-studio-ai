@@ -24,6 +24,8 @@ jobs:
             if html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=20261125-5"); then
               if ! grep -q '/app.js?v=20261125-5' <<< "$html"; then
                 echo "Attempt $attempt/24: production HTML is not on the current project lifecycle build"
+                echo "Currently published script references:"
+                grep -oE '/app.js[^"]*' <<< "$html" | head -5 || true
               elif app=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/app.js?v=20261125-5"); then
                 if grep -q 'Eliminar proyecto' <<< "$app" && grep -q 'Proyecto creado, guardado y verificado en tu biblioteca' <<< "$app"; then
                   echo "PRODUCTION VERIFIED"
