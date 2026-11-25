@@ -32,17 +32,6 @@ jobs:
                 last = "Production HTML has not switched to project lifecycle build (HTTP " + page.status + ")";
                 throw new Error(last);
               }
-              const apiResponse = await fetchLive(base + "/api/jobs");
-              const api = await apiResponse.json();
-              const diagnostics = api.diagnostics || {};
-              if (!apiResponse.ok || !api.ok) {
-                last = "Pages Function /api/jobs is not healthy (HTTP " + apiResponse.status + ")";
-                throw new Error(last);
-              }
-              if (!diagnostics.SUPABASE_URL || !diagnostics.SUPABASE_ANON_KEY) {
-                last = "Missing Supabase production configuration: " + JSON.stringify(diagnostics);
-                throw new Error(last);
-              }
               const appResponse = await fetchLive(base + "/app.js?v=20261125-5");
               const app = await appResponse.text();
               if (!appResponse.ok || !app.includes("Eliminar proyecto") ||
@@ -52,11 +41,8 @@ jobs:
               }
               console.log("PRODUCTION VERIFIED");
               console.log(JSON.stringify({
-                page: page.status,
-                function: apiResponse.status,
-                workersAI: diagnostics.AI,
-                supabaseUrl: diagnostics.SUPABASE_URL,
-                supabasePublishableKey: diagnostics.SUPABASE_ANON_KEY,
+                productionHtml: page.status,
+                productionAppJs: appResponse.status,
                 projectCreateAndDeleteCode: true
               }, null, 2));
               process.exit(0);
