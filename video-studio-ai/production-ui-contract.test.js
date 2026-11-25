@@ -20,3 +20,11 @@ test("segments can be assigned private image, environment and character referenc
  assert.match(engine,/storagePath:asset\.storagePath/);
  assert.match(app,/vsa-assets-loaded/);
 });
+
+
+test("long-film creation prepares a matching manifest and all missing master images before queueing", () => {
+  assert.match(ui, /window\.VSAEnsureFilmReadyAndQueue=async function/);
+  assert.match(ui, /await generateSegmentImages\(manifest,generateButton,status\)/);
+  assert.match(ui, /stillMissing\.length/);
+  assert.match(ui, /queueButton\.click\(\)/);
+});
