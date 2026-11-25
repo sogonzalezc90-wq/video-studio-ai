@@ -155,16 +155,50 @@
     }
   }
   async function createProject() {
+    const button=$("create-project-btn");
     try {
       const name=$("project-name").value.trim(), description=$("project-description").value.trim();
       if(!name) throw new Error("Escribe el nombre del proyecto.");
-      const {data:{user}}=await client().auth.getUser();
-      const {error}=await client().from("projects").insert({name,description,user_id:user.id});
-      if(error) throw error;
+      button.disabled=true;
+      message("project-message","Guardando el proyecto en Supabase…");
+      const {data:{user},error:userError}=await client().auth.getUser();
+      if(userError)throw userError;
+      if(!user)throw new Error("No se encontró una sesión activa. Cierra sesión e inicia nuevamente.");
+
+      // Existing installations may still have the old required projects.prompt
+      // column or may not yet have projects.description. Try the current schema
+      // first, then narrowly fall back for those two known migration differences.
+      const records=[
+        {name,description,user_id:user.id},
+        {name,description,prompt:description||name,user_id:user.id},
+        {name,prompt:description||name,user_id:user.id}
+      ];
+      let saved=false,lastError=null;
+      for(const record of records){
+        const result=await client().from("projects").insert(record);
+        if(!result.error){saved=true;break;}
+        lastError=result.error;
+        const code=String(result.error.code||"");
+        const detail=String(result.error.message||"");
+        const legacySchemaMismatch=["23502","42703","PGRST204"].includes(code)
+          ||/column .*does not exist|could not find .*column|null value in column .*prompt|schema cache/i.test(detail);
+        if(!legacySchemaMismatch)throw result.error;
+      }
+      if(!saved)throw new Error(
+        "Supabase rechazó la creación incluso con compatibilidad para el esquema anterior. "
+        +(lastError?.message||"Revisa las columnas de public.projects.")
+        +" Ejecuta supabase/VIDEO_STUDIO_AI_PRODUCTION_UPGRADE.sql en Supabase SQL Editor."
+      );
       $("project-name").value=""; $("project-description").value="";
-      message("project-message","Proyecto creado correctamente.");
+      message("project-message","Proyecto guardado correctamente. Actualizando biblioteca…");
       await loadProjects();
-    } catch(e) { message("project-message",e.message,true); }
+      if(!projects.length)throw new Error("Supabase aceptó el registro, pero la biblioteca no devolvió el proyecto. Revisa las políticas RLS de public.projects.");
+      message("project-message","Proyecto creado y confirmado en tu biblioteca.");
+    } catch(e) {
+      message("project-message","No se pudo crear el proyecto: "+(e.message||String(e)),true);
+    } finally {
+      button.disabled=false;
+    }
   }
   async function uploadAsset() {
     try {
