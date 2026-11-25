@@ -31,8 +31,8 @@ test("keeps short tests at the selected duration and separates them from 20-minu
 });
 test("assigns per-character voices to every dialogue in that character's segments",()=>{
  const manifest=engine.createManifest(sample(),{durationSeconds:30,maxSegmentSeconds:15});
- engine.assignVoice(manifest,"Kiyoshima","claude");
- assert.ok(manifest.segments.filter(s=>s.dialogues.some(d=>d.character==="Kiyoshima")).every(s=>s.voiceAssignments.Kiyoshima==="claude"));
+ engine.assignVoice(manifest,"Kiyoshima","alvaro");
+ assert.ok(manifest.segments.filter(s=>s.dialogues.some(d=>d.character==="Kiyoshima")).every(s=>s.voiceAssignments.Kiyoshima==="alvaro"));
  assert.throws(()=>engine.assignVoice(manifest,"Kiyoshima","not-a-voice"),/no está permitida/);
 });
 test("stores editable appearance and wardrobe profiles for any character",()=>{
@@ -96,7 +96,7 @@ test("supports arbitrary user-defined casts without fixed story characters",()=>
  assert.ok(manifest.characters.some(item=>item.name==="Amara"));
  assert.ok(manifest.characters.some(item=>item.name==="Detective Ruiz"));
  assert.ok(manifest.characters.some(item=>item.name==="Robot 7"));
- engine.assignVoice(manifest,"Robot 7","ald");
+ engine.assignVoice(manifest,"Robot 7","javier");
  assert.equal(manifest.characters.find(item=>item.name==="Robot 7").voice,"ald");
 });
 
