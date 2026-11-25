@@ -1,6 +1,30 @@
 -- VIDEO STUDIO AI — Supabase production upgrade (complete, additive)
 -- Run once in Supabase SQL Editor. Does not delete existing projects or assets.
 
+-- Repair the two legacy project-schema differences used by the current web app.
+-- Older installations may have a required projects.prompt column and no description column.
+alter table public.projects
+  add column if not exists description text;
+
+do $vsa$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public'
+      and table_name='projects'
+      and column_name='prompt'
+  ) then
+    alter table public.projects alter column prompt drop not null;
+  end if;
+end
+$vsa$;
+
+-- Keep existing media rows intact while adding the fields required by the library.
+alter table public.project_assets
+  add column if not exists mime_type text;
+alter table public.project_assets
+  add column if not exists asset_type text not null default 'image';
+
 -- VIDEO STUDIO AI: conservative daily admission control for optional Workers AI image/speech calls.
 -- This does not change existing assets, projects, jobs, or manifests.
 create table if not exists public.vsa_ai_daily_usage (
