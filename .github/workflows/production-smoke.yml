@@ -20,10 +20,10 @@ jobs:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 3); do
             if html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=20261125-5"); then
               if ! grep -q '/app.js?v=20261125-5' <<< "$html"; then
-                echo "Attempt $attempt/24: production HTML is not on the current project lifecycle build"
+                echo "Attempt $attempt/3: production HTML is not on the current project lifecycle build"
                 echo "Currently published script references:"
                 grep -oE '/app.js[^"]*' <<< "$html" | head -5 || true
               elif app=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/app.js?v=20261125-5"); then
@@ -39,7 +39,7 @@ jobs:
             else
               echo "Attempt $attempt/24: production page is not reachable yet"
             fi
-            if [ "$attempt" -lt 24 ]; then sleep 10; fi
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
           done
-          echo "Production verification did not pass after 7 minutes."
+          echo "Production verification did not pass after 30 seconds."
           exit 1
