@@ -1,0 +1,14 @@
+{
+  "name": "video-studio-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VIDEO STUDIO AI — Cloudflare Pages, Supabase and Kaggle worker",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
