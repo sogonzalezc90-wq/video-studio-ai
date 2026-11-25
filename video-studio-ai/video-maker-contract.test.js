@@ -27,3 +27,9 @@ test("the studio exposes a selectable Spanish dialogue voice", () => {
   assert.match(html, /value="alvaro"/);
   assert.match(html, /value="carina"/);
 });
+
+
+test("Create Video runs the long-film preparation workflow instead of directly clicking the queue", () => {
+  assert.match(source, /VSAEnsureFilmReadyAndQueue/);
+  assert.match(source, /await window\.VSAEnsureFilmReadyAndQueue\(\)/);
+});
