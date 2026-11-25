@@ -108,3 +108,67 @@ update storage.buckets
 set public = false,
     file_size_limit = greatest(coalesce(file_size_limit, 0), 5368709120)
 where id = 'video-renders';
+
+-- Repair access rules for existing installations. Having tables present is not
+-- sufficient: RLS without owner policies makes the app appear empty and blocks
+-- project creation even when authentication succeeds.
+alter table public.projects enable row level security;
+alter table public.project_assets enable row level security;
+
+drop policy if exists "owner reads own projects" on public.projects;
+create policy "owner reads own projects" on public.projects
+  for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "owner inserts own projects" on public.projects;
+create policy "owner inserts own projects" on public.projects
+  for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "owner updates own projects" on public.projects;
+create policy "owner updates own projects" on public.projects
+  for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "owner deletes own projects" on public.projects;
+create policy "owner deletes own projects" on public.projects
+  for delete to authenticated using (auth.uid() = user_id);
+
+drop policy if exists "owner reads own assets" on public.project_assets;
+create policy "owner reads own assets" on public.project_assets
+  for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "owner inserts own assets" on public.project_assets;
+create policy "owner inserts own assets" on public.project_assets
+  for insert to authenticated with check (
+    auth.uid() = user_id and exists (
+      select 1 from public.projects p
+      where p.id = project_id and p.user_id = auth.uid()
+    )
+  );
+drop policy if exists "owner deletes own assets" on public.project_assets;
+create policy "owner deletes own assets" on public.project_assets
+  for delete to authenticated using (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.projects to authenticated;
+grant select, insert, delete on public.project_assets to authenticated;
+
+insert into storage.buckets (id, name, public)
+values ('video-assets', 'video-assets', false)
+on conflict (id) do update set public = false;
+
+drop policy if exists "owner reads own video assets" on storage.objects;
+create policy "owner reads own video assets" on storage.objects
+  for select to authenticated using (
+    bucket_id = 'video-assets' and (storage.foldername(name))[1] = auth.uid()::text
+  );
+drop policy if exists "owner uploads own video assets" on storage.objects;
+create policy "owner uploads own video assets" on storage.objects
+  for insert to authenticated with check (
+    bucket_id = 'video-assets' and (storage.foldername(name))[1] = auth.uid()::text
+  );
+drop policy if exists "owner updates own video assets" on storage.objects;
+create policy "owner updates own video assets" on storage.objects
+  for update to authenticated using (
+    bucket_id = 'video-assets' and (storage.foldername(name))[1] = auth.uid()::text
+  ) with check (
+    bucket_id = 'video-assets' and (storage.foldername(name))[1] = auth.uid()::text
+  );
+drop policy if exists "owner deletes own video assets" on storage.objects;
+create policy "owner deletes own video assets" on storage.objects
+  for delete to authenticated using (
+    bucket_id = 'video-assets' and (storage.foldername(name))[1] = auth.uid()::text
+  );
