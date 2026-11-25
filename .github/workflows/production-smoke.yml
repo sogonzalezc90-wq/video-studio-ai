@@ -9,7 +9,7 @@ on:
 jobs:
   production-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,16 +22,17 @@ jobs:
           node <<'NODE'
           const base = process.env.PRODUCTION_URL.replace(/\/$/, "");
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          const fetchLive = url => fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
           let last = "No response yet";
-          for (let attempt = 1; attempt <= 40; attempt++) {
+          for (let attempt = 1; attempt <= 24; attempt++) {
             try {
-              const page = await fetch(base + "/?v=20261125-5", { cache: "no-store" });
+              const page = await fetchLive(base + "/?v=20261125-5");
               const html = await page.text();
               if (!page.ok || !html.includes("/app.js?v=20261125-5")) {
                 last = "Production HTML has not switched to project lifecycle build (HTTP " + page.status + ")";
                 throw new Error(last);
               }
-              const apiResponse = await fetch(base + "/api/jobs", { cache: "no-store" });
+              const apiResponse = await fetchLive(base + "/api/jobs");
               const api = await apiResponse.json();
               const diagnostics = api.diagnostics || {};
               if (!apiResponse.ok || !api.ok) {
@@ -42,7 +43,7 @@ jobs:
                 last = "Missing production bindings: " + JSON.stringify(diagnostics);
                 throw new Error(last);
               }
-              const appResponse = await fetch(base + "/app.js?v=20261125-5", { cache: "no-store" });
+              const appResponse = await fetchLive(base + "/app.js?v=20261125-5");
               const app = await appResponse.text();
               if (!appResponse.ok || !app.includes("Eliminar proyecto") ||
                   !app.includes("Proyecto creado, guardado y verificado en tu biblioteca")) {
@@ -61,9 +62,9 @@ jobs:
               process.exit(0);
             } catch (error) {
               last = error.message;
-              console.log("Attempt " + attempt + "/40: " + last);
-              if (attempt < 40) await sleep(15000);
+              console.log("Attempt " + attempt + "/24: " + last);
+              if (attempt < 24) await sleep(10000);
             }
           }
-          throw new Error("Production verification did not pass after 10 minutes: " + last);
+          throw new Error("Production verification did not pass after 7 minutes: " + last);
           NODE
