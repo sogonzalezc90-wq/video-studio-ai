@@ -23,3 +23,11 @@ test("speech and image generation never fall back to paid providers", () => {
   assert.match(jobs, /No se intentó usar un proveedor de pago/);
   assert.match(jobs, /No se activó ningún proveedor de pago/);
 });
+
+
+test("FLUX 2 Klein text-to-image requests use multipart input, not JSON", () => {
+  assert.match(jobs, /FLUX\.2 Klein 4B accepts multipart input only/);
+  assert.match(jobs, /form\.set\("prompt",strengthenPrompt\(prompt\)\)/);
+  assert.match(jobs, /multipart:\s*\{\s*body:multipartRequest\.body/);
+  assert.doesNotMatch(jobs, /env\.AI\.run\(IMAGE_MODEL,\{prompt:strengthenPrompt\(prompt\),width:1024,height:576\}\)/);
+});
