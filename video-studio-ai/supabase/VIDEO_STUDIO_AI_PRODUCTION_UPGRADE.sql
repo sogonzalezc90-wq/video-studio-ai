@@ -172,3 +172,14 @@ create policy "owner deletes own video assets" on storage.objects
   for delete to authenticated using (
     bucket_id = 'video-assets' and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+
+-- Project lifecycle hardening (2026-11-25).
+-- Do not expose project or asset metadata to anonymous API clients.
+revoke all privileges on table public.projects, public.project_assets from public, anon;
+revoke all privileges on table public.projects, public.project_assets from authenticated;
+grant select, insert, update, delete on table public.projects to authenticated;
+grant select, insert, delete on table public.project_assets to authenticated;
+
+-- Keep one owner-scoped delete policy for project assets.
+drop policy if exists "Users can delete their own project assets" on public.project_assets;
