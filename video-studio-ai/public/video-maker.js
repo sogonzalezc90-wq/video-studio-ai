@@ -128,14 +128,11 @@
     try{
       const duration=Number($("video-duration").value)||30;
       if(duration>30){
-        const queueButton=$("wan-queue-submit");
-        const story=$("video-story")?.value.trim()||"";
-        const projectId=$("generation-project")?.value||"";
-        if(!queueButton)throw new Error("No está disponible la cola Wan 2.2 para películas de más de 30 segundos.");
-        if(story.length<30)throw new Error("Escribe una historia de al menos 30 caracteres antes de crear el video.");
-        if(!projectId)throw new Error("Selecciona primero un proyecto en «Proyecto destino» de la sección de generación de imágenes.");
-        setMessage("Enviando la historia a la cola Wan 2.2. Consulta el estado en «Motor neuronal · Cola GPU».");
-        queueButton.click();
+        if(typeof window.VSAEnsureFilmReadyAndQueue!=="function")
+          throw new Error("El módulo de producción no terminó de cargar. Actualiza la página con Ctrl+F5 e inténtalo de nuevo.");
+        setMessage("Preparando la película: creando el plan y generando las imágenes maestras que necesita Wan 2.2…");
+        await window.VSAEnsureFilmReadyAndQueue();
+        setMessage("Las imágenes maestras están listas. Se ha enviado la película a la cola Wan 2.2; consulta su estado en Motor neuronal · Cola GPU.");
         return;
       }
       const imageElement=$("generation-preview");
