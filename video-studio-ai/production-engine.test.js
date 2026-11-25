@@ -97,7 +97,7 @@ test("supports arbitrary user-defined casts without fixed story characters",()=>
  assert.ok(manifest.characters.some(item=>item.name==="Detective Ruiz"));
  assert.ok(manifest.characters.some(item=>item.name==="Robot 7"));
  engine.assignVoice(manifest,"Robot 7","javier");
- assert.equal(manifest.characters.find(item=>item.name==="Robot 7").voice,"ald");
+ assert.equal(manifest.characters.find(item=>item.name==="Robot 7").voice,"javier");
 });
 
 test("creates exact 30-second segments through a 20-minute film",()=>{
