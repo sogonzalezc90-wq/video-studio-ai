@@ -1,45 +1,60 @@
-name: Verify VIDEO STUDIO AI production
+name: Verify VIDEO STUDIO AI production audio
 on:
   push:
     branches: ["main"]
     paths:
       - "video-studio-ai/public/**"
+      - "video-studio-ai/functions/**"
+      - "video-studio-ai/worker/**"
       - ".github/workflows/production-smoke.yml"
   workflow_dispatch:
 jobs:
-  production-smoke:
+  production-audio-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Wait for Cloudflare Pages production deployment and verify project lifecycle
+      - name: Wait for Cloudflare Pages and verify contextual audio deployment
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
+          ASSET_VERSION: "20261126-audio1"
         run: |
           set -euo pipefail
           for attempt in $(seq 1 24); do
-            if html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=20261125-5"); then
-              if ! grep -q '/app.js?v=20261125-5' <<< "$html"; then
-                echo "Attempt $attempt/3: production HTML is not on the current project lifecycle build"
-                echo "Currently published script references:"
-                grep -oE '/app.js[^"]*' <<< "$html" | head -5 || true
-              elif app=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/app.js?v=20261125-5"); then
-                if grep -q 'Eliminar proyecto' <<< "$app" && grep -q 'Proyecto creado, guardado y verificado en tu biblioteca' <<< "$app"; then
-                  echo "PRODUCTION VERIFIED"
-                  echo "Cloudflare Pages serves the project create/save/verify/delete code."
-                  exit 0
+            if html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=$ASSET_VERSION"); then
+              if ! grep -q "/scene-engine.js?v=$ASSET_VERSION" <<< "$html"; then
+                echo "Attempt $attempt/24: waiting for the latest production asset version"
+              elif scene=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION"); then
+                if grep -q 'ambiente_zoologico' <<< "$scene" \
+                  && grep -q 'ambiente_consultorio' <<< "$scene" \
+                  && grep -q 'ambiente_mercado' <<< "$scene" \
+                  && grep -q 'ambiente_plaza_comercial' <<< "$scene" \
+                  && grep -q 'ambiente_restaurante' <<< "$scene" \
+                  && grep -q 'ambiente_autodromo' <<< "$scene" \
+                  && grep -q 'ambiente_calle' <<< "$scene"; then
+                  renderer=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
+                  if grep -q 'ambiente_zoologico' <<< "$renderer" \
+                    && grep -q 'equipo_medico' <<< "$renderer" \
+                    && grep -q 'caja_registradora' <<< "$renderer"; then
+                    api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
+                    if grep -q 'free-allocation-only-no-provider-fallback' <<< "$api"; then
+                      echo "PRODUCTION AUDIO VERIFIED"
+                      echo "Cloudflare serves the contextual scene analyzer, browser sound renderer, and free-only API policy."
+                      exit 0
+                    fi
+                    echo "Attempt $attempt/24: API policy response is not ready"
+                  else
+                    echo "Attempt $attempt/24: browser sound renderer is missing required context cues"
+                  fi
+                else
+                  echo "Attempt $attempt/24: scene analyzer is missing required location cues"
                 fi
-                echo "Attempt $attempt/24: deployed app.js is missing project lifecycle code"
               else
-                echo "Attempt $attempt/24: app.js is not reachable yet"
+                echo "Attempt $attempt/24: scene engine is not reachable yet"
               fi
             else
-              echo "Attempt $attempt/24: production page is not reachable yet"
+              echo "Attempt $attempt/24: production HTML is not reachable yet"
             fi
             if [ "$attempt" -lt 24 ]; then sleep 10; fi
           done
-          echo "Production verification did not pass after 30 seconds."
+          echo "Production contextual audio verification did not pass."
           exit 1
