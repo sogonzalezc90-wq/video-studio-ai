@@ -221,7 +221,8 @@
 
   function audioCuesFor(scene,shot) {
     const shotTypes=classify([shot.title,shot.description].filter(Boolean).join("\n")).types;
-    const types=new Set(shotTypes.length?shotTypes:(scene.types||[]));
+    // Preserve the location bed from the parent scene and add shot-specific actions.
+    const types=new Set([...(scene.types||[]),...shotTypes]);
     const cueMap={
       car:"motor_automovil",
       motorcycle:"motor_motocicleta",
