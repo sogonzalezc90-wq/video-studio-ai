@@ -247,32 +247,40 @@
   }
   function buildAudio(ctx,destination,duration,analysis){
     const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
-    compressor.threshold.value=-20;compressor.knee.value=18;compressor.ratio.value=3.2;
-    compressor.attack.value=.004;compressor.release.value=.22;
-    master.gain.value=.78;music.gain.value=analysis.hasDialogue?.035:.065;
+    compressor.threshold.value=-24;compressor.knee.value=16;compressor.ratio.value=4.5;
+    compressor.attack.value=.003;compressor.release.value=.24;
+    master.gain.value=1.0;music.gain.value=analysis.hasDialogue?.48:.34;
     music.connect(master);master.connect(compressor);compressor.connect(destination);
+    // Replace the old continuous low-frequency drone (which sounded like a hum)
+    // with short, musical notes and a gentle changing arpeggio.
     const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
-    const notes=mood==="suspenso"?[55,65.41,82.41]:mood==="accion"?[73.42,110,146.83]:[65.41,98,130.81];
-    const oscillators=[];
-    notes.forEach((hz,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type="triangle";o.frequency.value=hz;f.type="lowpass";f.frequency.value=360;g.gain.value=i===0?.16:.07;o.connect(f);f.connect(g);g.connect(music);o.start(start);oscillators.push(o);});
+    const scale=mood==="suspenso"?[110,130.81,155.56,196]:mood==="accion"?[146.83,174.61,220,293.66]:[196,220,261.63,329.63];
+    const beat=1.15;
+    for(let t=0,n=0;t<duration;t+=beat,n++){
+      const at=start+t;
+      const root=scale[n%scale.length];
+      tone(ctx,music,at,root,.42,"sine",.055);
+      if(n%2===0)tone(ctx,music,at+.24,root*1.5,.28,"triangle",.026);
+      if(n%4===3)tone(ctx,music,at+.48,root*2,.22,"sine",.018);
+    }
     const span=duration/Math.max(1,analysis.scenes.length);
     analysis.scenes.forEach((s,i)=>{
       const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
       if(s.types.includes("car")){tone(ctx,master,when,58,len,"sawtooth",.075,135);tone(ctx,master,when+.3,950,.18,"sine",.025,400);}
       if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
-      if(s.types.includes("rain"))noise(ctx,master,when,len,.012,"lowpass",1500);
-      if(s.types.includes("wind"))noise(ctx,master,when,len,.008,"lowpass",300);
+      if(s.types.includes("rain"))noise(ctx,master,when,len,.024,"lowpass",1500);
+      if(s.types.includes("wind"))noise(ctx,master,when,len,.014,"lowpass",300);
       if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,72+(k%2)*16,.12,"triangle",.025,38);
       if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
       if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
-      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.014);addGlassClinks(ctx,master,when,2);}
-      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.016);
+      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.024);addGlassClinks(ctx,master,when,3);}
+      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.026);
       if(s.types.includes("cups"))addGlassClinks(ctx,master,when,3);
       if(s.types.includes("laughter")){tone(ctx,master,when+1.1,520,.22,"triangle",.006,690);tone(ctx,master,when+1.38,650,.2,"triangle",.005,790);}
       if(s.types.includes("zoo")||s.types.includes("birds"))addBirdChirps(ctx,master,when,len);
       if(s.types.includes("clinic")||s.types.includes("medical")){tone(ctx,master,when+1.2,880,.08,"sine",.006,880);tone(ctx,master,when+3.1,880,.08,"sine",.006,880);}
-      if(s.types.includes("market")||s.types.includes("mall"))addMurmur(ctx,master,when,len,.016);
+      if(s.types.includes("market")||s.types.includes("mall"))addMurmur(ctx,master,when,len,.024);
       if(s.types.includes("restaurant")||s.types.includes("kitchen")){addMurmur(ctx,master,when,len,.012);addGlassClinks(ctx,master,when,3);}
       if(s.types.includes("racetrack")){addEngineRev(ctx,master,when,len,.032);addMurmur(ctx,master,when,len,.009);}
       if(s.types.includes("street"))addPassingTraffic(ctx,master,when,len);
@@ -285,7 +293,7 @@
       if(s.dialogues.length){music.gain.setValueAtTime(.035,when);music.gain.setValueAtTime(.1,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
       if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
-    return ()=>{oscillators.forEach(o=>{try{o.stop();}catch(_){}});try{master.disconnect();music.disconnect();compressor.disconnect();}catch(_){}};
+    return ()=>{try{master.disconnect();music.disconnect();compressor.disconnect();}catch(_){}};
   }
 
   function audioCuesFor(scene,shot) {
