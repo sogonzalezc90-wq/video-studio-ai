@@ -31,9 +31,10 @@ class AudioPipelineTests(unittest.TestCase):
         )
         lines = audio._extract_dialogues(text)
         self.assertEqual([x["speaker"] for x in lines], ["Kiyoshima", "Kashymoto"])
-        self.assertEqual(audio._voice_key("Kiyoshima", {})[0], "claude")
-        self.assertEqual(audio._voice_key("Kashymoto", {})[0], "ald")
-        self.assertNotEqual(audio._voice_key("Kiyoshima", {})[1], audio._voice_key("Keriko", {})[1])
+        speaker_order = {}
+        self.assertEqual(audio._voice_key("Kiyoshima", speaker_order)[0], "claude")
+        self.assertEqual(audio._voice_key("Kashymoto", speaker_order)[0], "ald")
+        self.assertNotEqual(audio._voice_key("Kiyoshima", speaker_order)[1], audio._voice_key("Keriko", speaker_order)[1])
 
     def test_character_casting_uses_available_piper_voice_ids(self):
         self.assertEqual(audio._voice_key("Personaje A", {}, "auto", "claude")[0], "claude")
