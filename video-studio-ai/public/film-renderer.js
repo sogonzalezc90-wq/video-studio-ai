@@ -136,6 +136,11 @@
           else if(cue==="puerta")cueTone(audioCtx,master,segmentStart+Math.min(1,duration*.2),180,.35,.04,"triangle");
           else if(cue==="impacto")cueNoise(audioCtx,master,segmentStart,.45,.04,500);
           else if(cue==="herramientas_taller")cueNoise(audioCtx,master,segmentStart,duration*.5,.024,3200);
+          else if(cue==="ambiente_cafeteria"){cueNoise(audioCtx,master,segmentStart,duration,.010,1500);cueNoise(audioCtx,master,segmentStart,duration,.006,520);}
+          else if(cue==="trafico_calle")cueNoise(audioCtx,master,segmentStart,duration,.012,620);
+          else if(cue==="conversaciones_fondo")cueNoise(audioCtx,master,segmentStart,duration,.008,2100);
+          else if(cue==="tazas_vasos"){for(let k=0;k<3;k++){const at=segmentStart+Math.min(duration-.2,.8+k*1.5);cueTone(audioCtx,master,at,1450+k*170,.12,.018,"sine");cueTone(audioCtx,master,at+.04,2100+k*90,.08,.012,"sine");}}
+          else if(cue==="risas"){for(let k=0;k<2;k++){const at=segmentStart+Math.min(duration-.25,1.2+k*2.1);cueTone(audioCtx,master,at,520,.13,.009,"triangle");cueTone(audioCtx,master,at+.16,620,.12,.008,"triangle");}}
         });
         if(video.src){await video.play();}
         const endAt=performance.now()+duration*1000;
