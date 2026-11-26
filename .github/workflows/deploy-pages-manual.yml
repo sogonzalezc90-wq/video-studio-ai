@@ -1,6 +1,14 @@
 name: Manual deploy to Cloudflare Pages
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - "video-studio-ai/public/**"
+      - "video-studio-ai/functions/**"
+      - "video-studio-ai/worker/**"
+      - "video-studio-ai/package.json"
+      - ".github/workflows/deploy-pages-manual.yml"
   workflow_dispatch:
     inputs:
       confirm_production:
@@ -18,7 +26,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ inputs.confirm_production == true }}
+    if: ${{ github.event_name == 'push' || inputs.confirm_production == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
