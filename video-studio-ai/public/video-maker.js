@@ -159,9 +159,9 @@
         const story=$("video-story")?.value.trim()||"";
         const analysis=window.VSASceneEngine?.analyze(story)||{scenes:[],counts:{}};
         hasDialogue=Boolean(analysis.hasDialogue);
-        stopAudio=window.VSASceneEngine
-          ? window.VSASceneEngine.buildAudio(audioContext,destination,duration,analysis)
-          : await makeAmbientAudio(audioContext,destination);
+        if(!window.VSASceneEngine?.buildAudio)
+          throw new Error("El motor de sonido no está disponible. Actualiza la página con Ctrl+F5; no se generará un video con zumbido de sustitución.");
+        stopAudio=window.VSASceneEngine.buildAudio(audioContext,destination,duration,analysis);
         if(analysis.hasDialogue) stopVoices=await loadDialogueVoices(audioContext,destination,analysis,duration);
         destination.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
       }
