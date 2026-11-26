@@ -179,6 +179,17 @@ def _ambience(text):
         "cafe": ("café", "cafe", "cafetería", "cafeteria", "terraza de café", "barista", "máquina de espresso", "maquina de espresso"),
         "race": ("autódromo", "autodromo", "carrera", "circuito", "pista de carreras", "boxes", "parrilla de salida", "pit lane", "motor", "automóvil", "automovil", "auto", "coche", "carro"),
         "city": ("ciudad", "calle", "tráfico", "trafico", "avenida", "boulevard", "semáforo", "semaforo", "cruce peatonal"),
+        "library": ("biblioteca", "librería", "libreria", "sala de lectura", "archivo"),
+        "school": ("escuela", "colegio", "salón de clases", "salon de clases", "aula", "recreo", "patio escolar"),
+        "museum": ("museo", "galería", "galeria", "exposición", "exposicion", "sala de exhibición", "sala de exhibicion"),
+        "hotel": ("hotel", "recepción", "recepcion", "lobby", "vestíbulo", "vestibulo", "elevador", "ascensor"),
+        "church": ("iglesia", "templo", "catedral", "campanario", "misa"),
+        "park": ("parque", "jardín público", "jardin publico", "columpio", "juegos infantiles"),
+        "pool": ("alberca", "piscina", "chapoteadero", "natación", "natacion"),
+        "bus": ("autobús", "autobus", "camión urbano", "camion urbano", "terminal de autobuses", "parada de autobús", "parada de autobus"),
+        "construction": ("construcción", "construccion", "obra", "maquinaria pesada", "excavadora", "taladro", "demolición", "demolicion"),
+        "theater": ("teatro", "cine", "sala de cine", "escenario", "butacas", "proyección", "proyeccion"),
+        "gym": ("gimnasio", "pesas", "mancuernas", "caminadora", "entrenamiento"),
         "kitchen": ("cocina", "cocinero", "cocinera", "freír", "freir", "sartén", "sarten", "hervir", "horno", "parrilla"),
         "forest": ("bosque", "árboles", "arboles", "selva", "pájaros", "pajaros", "birds"),
         "workshop": ("taller", "mecánico", "mecanico", "herramientas", "garaje", "garage"),
@@ -232,6 +243,13 @@ def _effects(text):
         "cooking": ("freír", "freir", "sartén", "sarten", "hervir", "cocinar", "cocinando", "fríe", "frie", "chef fríe", "chef frie", "parrilla", "horno"),
         "insects": ("grillos", "cigarras", "chicharras", "insectos"),
         "fire": ("fuego", "fogata", "chimenea", "llamas", "incendio"),
+        "pages": ("página", "pagina", "hojas", "libro", "pasar página", "pasar pagina"),
+        "school_bell": ("timbre escolar", "campana escolar", "timbre de recreo"),
+        "elevator": ("elevador", "ascensor", "puertas del elevador"),
+        "bus": ("autobús", "autobus", "camión urbano", "camion urbano", "frenos del autobús", "frenos del autobus"),
+        "construction": ("taladro", "excavadora", "martillo neumático", "martillo neumatico", "obra", "demolición", "demolicion"),
+        "gym": ("pesas", "mancuernas", "barra de pesas", "máquina de gimnasio", "maquina de gimnasio"),
+        "church_bell": ("campanas de iglesia", "campanadas", "campana de iglesia", "campanario"),
     }
     for name, words in rules.items():
         if any(word in t for word in words):
@@ -322,6 +340,39 @@ def _write_ambience(names, duration, target):
         elif name == "clinic":
             source = f"anoisesrc=color=pink:amplitude=0.012:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=950,highpass=f=180"
+        elif name == "library":
+            source = f"anoisesrc=color=pink:amplitude=0.006:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=1200,highpass=f=220"
+        elif name == "school":
+            source = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=1400:w=2300,tremolo=f=0.45:d=0.18"
+        elif name == "museum":
+            source = f"anoisesrc=color=pink:amplitude=0.009:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=1600,highpass=f=180"
+        elif name == "hotel":
+            source = f"anoisesrc=color=pink:amplitude=0.018:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=1000:w=1700,lowpass=f=3000"
+        elif name == "church":
+            source = f"anoisesrc=color=pink:amplitude=0.012:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=1900,highpass=f=120"
+        elif name == "park":
+            source = f"anoisesrc=color=brown:amplitude=0.028:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=2200,highpass=f=160,tremolo=f=0.2:d=0.35"
+        elif name == "pool":
+            source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=2600,highpass=f=120,tremolo=f=0.7:d=0.28"
+        elif name == "bus":
+            source = f"anoisesrc=color=brown:amplitude=0.065:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=850,highpass=f=45,tremolo=f=0.35:d=0.4"
+        elif name == "construction":
+            source = f"anoisesrc=color=pink:amplitude=0.065:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=300,lowpass=f=4200,tremolo=f=4:d=0.45"
+        elif name == "theater":
+            source = f"anoisesrc=color=pink:amplitude=0.02:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=950:w=1700"
+        elif name == "gym":
+            source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=1800,highpass=f=180"
         elif name == "market":
             source = f"anoisesrc=color=pink:amplitude=0.05:sample_rate=48000:duration={duration}"
             filt = "bandpass=f=1300:w=2400,tremolo=f=0.8:d=0.22"
@@ -460,6 +511,25 @@ def _write_sfx(names, duration, target):
         elif name == "fire":
             src = f"anoisesrc=color=brown:amplitude=0.06:sample_rate=48000:duration={duration}"
             filt = "highpass=f=450,lowpass=f=5000,tremolo=f=4:d=0.7,volume=0.4"
+        elif name == "pages":
+            src = f"anoisesrc=color=white:amplitude=0.035:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=900,lowpass=f=7200,tremolo=f=5:d=0.25,volume=0.35"
+        elif name == "school_bell" or name == "church_bell":
+            base = 1450 if name == "school_bell" else 880
+            src = f"aevalsrc=0.08*sin(2*PI*{base}*t)+0.04*sin(2*PI*{base*2}*t):s=48000:d={duration}"
+            filt = "afade=t=in:d=0.03,afade=t=out:st=0.8:d=0.7,volume=0.45"
+        elif name == "elevator":
+            src = f"aevalsrc=0.06*sin(2*PI*(660+220*t)*t):s=48000:d={duration}"
+            filt = "afade=t=in:d=0.03,afade=t=out:st=0.35:d=0.3,volume=0.4"
+        elif name == "bus":
+            src = f"anoisesrc=color=brown:amplitude=0.08:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=950,highpass=f=40,tremolo=f=0.3:d=0.4,volume=0.45"
+        elif name == "construction":
+            src = f"anoisesrc=color=white:amplitude=0.07:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=250,lowpass=f=5000,tremolo=f=6:d=0.6,volume=0.45"
+        elif name == "gym":
+            src = f"anoisesrc=color=pink:amplitude=0.05:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=150,lowpass=f=2600,tremolo=f=1.8:d=0.5,volume=0.35"
         else:
             continue
         inputs += ["-f", "lavfi", "-i", src]
@@ -498,7 +568,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         if not isinstance(item, dict):
             continue
         name = str(item.get("name") or "").strip().lower()
-        if name not in {"engine", "footsteps", "door", "impact", "tools", "crowd", "gunshot", "explosion", "glass", "phone", "alarm", "water", "applause", "animal", "birds", "dog", "cat", "horse", "cups", "laughter", "cash_register", "shopping_cart", "medical_beep", "train", "aircraft", "cooking", "insects", "fire"}:
+        if name not in {"engine", "footsteps", "door", "impact", "tools", "crowd", "gunshot", "explosion", "glass", "phone", "alarm", "water", "applause", "animal", "birds", "dog", "cat", "horse", "cups", "laughter", "cash_register", "shopping_cart", "medical_beep", "train", "aircraft", "cooking", "insects", "fire", "pages", "school_bell", "elevator", "bus", "construction", "gym", "church_bell"}:
             continue
         try:
             absolute_time = max(0.0, min(duration, float(item.get("time_seconds", 0))))
