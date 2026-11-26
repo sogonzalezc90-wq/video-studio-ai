@@ -62,7 +62,7 @@ jobs:
                     && grep -q 'ambiente_teatro' <<< "$renderer" \
                     && grep -q 'ambiente_gimnasio' <<< "$renderer" \
                     && grep -q 'paginas' <<< "$renderer" \
-                    && grep -q 'campanas_iglesia' <<< "$renderer' \
+                    && grep -q 'campanas_iglesia' <<< "$renderer" \
                     && grep -q 'elevador' <<< "$renderer"; then
                     api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
                     if grep -q 'free-allocation-only-no-provider-fallback' <<< "$api"; then
