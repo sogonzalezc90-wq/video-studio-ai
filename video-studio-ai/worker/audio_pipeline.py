@@ -324,29 +324,29 @@ def _write_ambience(names, duration, target):
             source = f"anoisesrc=color=brown:amplitude=0.07:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=900"
         elif name == "race":
-            source = f"aevalsrc=0.045*sin(2*PI*(68+13*sin(2*PI*0.32*t))*t)+0.012*sin(2*PI*136*t):s=48000:d={duration}"
-            filt = "lowpass=f=1200"
+            source = f"aevalsrc=0.024*sin(2*PI*(68+42*sin(2*PI*0.17*t))*t)+0.012*sin(2*PI*(136+84*sin(2*PI*0.17*t))*t)+0.006*sin(2*PI*(410+150*sin(2*PI*0.17*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=1800,afade=t=in:d=0.5"
         elif name == "city":
-            source = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1800,highpass=f=90,tremolo=f=0.16:d=0.35"
+            source = f"aevalsrc=0.010*sin(2*PI*(58+24*sin(2*PI*0.11*t))*t)+0.005*sin(2*PI*(116+48*sin(2*PI*0.11*t))*t)+0.002*sin(2*PI*430*t)*abs(sin(2*PI*0.35*t)):s=48000:d={duration}"
+            filt = "lowpass=f=1500,highpass=f=45"
         elif name == "airport":
             source = f"anoisesrc=color=brown:amplitude=0.055:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=850,highpass=f=70,tremolo=f=0.12:d=0.45"
         elif name == "cafe":
-            source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=280,lowpass=f=3200,bandpass=f=1250:w=2100,tremolo=f=0.22:d=0.18"
+            source = f"aevalsrc=0.009*sin(2*PI*(118+5*sin(2*PI*0.23*t))*t)+0.006*sin(2*PI*(530+18*sin(2*PI*0.6*t))*t)+0.004*sin(2*PI*(1120+32*sin(2*PI*0.35*t))*t)+0.002*sin(2*PI*(1750+45*sin(2*PI*0.48*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=2800,highpass=f=100"
         elif name == "zoo":
-            source = f"anoisesrc=color=pink:amplitude=0.045:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=450,lowpass=f=4200,bandpass=f=1500:w=2600,tremolo=f=0.7:d=0.2"
+            source = f"aevalsrc=0.012*sin(2*PI*(1750+420*sin(2*PI*1.15*t))*t)*abs(sin(2*PI*0.72*t))+0.008*sin(2*PI*(2350+560*sin(2*PI*0.83*t))*t)*abs(sin(2*PI*0.51*t))+0.004*sin(2*PI*(3100+300*sin(2*PI*1.4*t))*t)*abs(sin(2*PI*0.38*t)):s=48000:d={duration}"
+            filt = "highpass=f=900,lowpass=f=5200"
         elif name == "clinic":
-            source = f"anoisesrc=color=pink:amplitude=0.012:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=950,highpass=f=180"
+            source = f"aevalsrc=0.004*sin(2*PI*60*t)+0.003*sin(2*PI*120*t)+0.004*sin(2*PI*880*t)*(0.5+0.5*sin(2*PI*0.42*t)):s=48000:d={duration}"
+            filt = "lowpass=f=1600,highpass=f=45"
         elif name == "library":
-            source = f"anoisesrc=color=pink:amplitude=0.006:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1200,highpass=f=220"
+            source = f"aevalsrc=0.0018*sin(2*PI*120*t)+0.001*sin(2*PI*240*t):s=48000:d={duration}"
+            filt = "lowpass=f=900"
         elif name == "school":
-            source = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=1400:w=2300,tremolo=f=0.45:d=0.18"
+            source = f"aevalsrc=0.009*sin(2*PI*(130+8*sin(2*PI*0.27*t))*t)+0.006*sin(2*PI*(620+30*sin(2*PI*0.6*t))*t)+0.004*sin(2*PI*(1450+50*sin(2*PI*0.48*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=3400,highpass=f=100"
         elif name == "museum":
             source = f"anoisesrc=color=pink:amplitude=0.009:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=1600,highpass=f=180"
@@ -375,14 +375,14 @@ def _write_ambience(names, duration, target):
             source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=1800,highpass=f=180"
         elif name == "market":
-            source = f"anoisesrc=color=pink:amplitude=0.05:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=1300:w=2400,tremolo=f=0.8:d=0.22"
+            source = f"aevalsrc=0.010*sin(2*PI*(125+7*sin(2*PI*0.31*t))*t)+0.007*sin(2*PI*(610+28*sin(2*PI*0.72*t))*t)+0.005*sin(2*PI*(1280+55*sin(2*PI*0.47*t))*t)+0.003*sin(2*PI*(1960+70*sin(2*PI*0.55*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=3200,highpass=f=130"
         elif name == "mall":
-            source = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=1000:w=1800,lowpass=f=3200"
+            source = f"aevalsrc=0.007*sin(2*PI*(132+4*sin(2*PI*0.19*t))*t)+0.005*sin(2*PI*(570+16*sin(2*PI*0.53*t))*t)+0.003*sin(2*PI*(1180+24*sin(2*PI*0.41*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=2800,highpass=f=110"
         elif name == "restaurant":
-            source = f"anoisesrc=color=pink:amplitude=0.03:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=1600:w=2200,tremolo=f=0.3:d=0.12"
+            source = f"aevalsrc=0.008*sin(2*PI*(120+5*sin(2*PI*0.22*t))*t)+0.005*sin(2*PI*(550+22*sin(2*PI*0.63*t))*t)+0.003*sin(2*PI*(1320+30*sin(2*PI*0.44*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=3000,highpass=f=100"
         elif name == "kitchen":
             source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
             filt = "highpass=f=700,lowpass=f=5200,tremolo=f=2.5:d=0.3"
@@ -643,9 +643,9 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         _write_sfx(unscheduled_effects, scene_duration, sfx)
         inputs = ["-i", str(music), "-i", str(ambience), "-i", str(sfx)]
         has_scene_dialogue = bool(scene["dialogues"])
-        music_gain = "0.18" if has_scene_dialogue else "0.34"
-        ambience_gain = "0.48" if has_scene_dialogue else "0.72"
-        filters = [f"[0:a]volume={music_gain}[music]", f"[1:a]volume={ambience_gain}[amb]", "[2:a]volume=0.72[sfx]"]
+        music_gain = "0.10" if has_scene_dialogue else "0.22"
+        ambience_gain = "0.28" if has_scene_dialogue else "0.48"
+        filters = [f"[0:a]volume={music_gain}[music]", f"[1:a]volume={ambience_gain}[amb]", "[2:a]volume=0.48[sfx]"]
         mix_labels = ["[music]", "[amb]", "[sfx]"]
         dialogue_records = []
         dialogue_cursor = 0.35
@@ -672,7 +672,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
                 f"[{3+line_index}:a]aresample=48000,"
                 f"asetrate={int(48000*pitch)},aresample=48000,"
                 f"atempo={1.0/pitch:.6f},adelay={int(start*1000)}|{int(start*1000)},"
-                f"volume=1.45[{label}]"
+                f"highpass=f=75,lowpass=f=9500,volume=1.75,acompressor=threshold=-20dB:ratio=2.4:attack=5:release=90[{label}]"
             )
             mix_labels.append(f"[{label}]")
             dialogue_records.append({
