@@ -333,19 +333,19 @@ def _write_ambience(names, duration, target):
             source = f"anoisesrc=color=brown:amplitude=0.055:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=850,highpass=f=70,tremolo=f=0.12:d=0.45"
         elif name == "cafe":
-            source = f"aevalsrc=0.009*sin(2*PI*(118+5*sin(2*PI*0.23*t))*t)+0.006*sin(2*PI*(530+18*sin(2*PI*0.6*t))*t)+0.004*sin(2*PI*(1120+32*sin(2*PI*0.35*t))*t)+0.002*sin(2*PI*(1750+45*sin(2*PI*0.48*t))*t):s=48000:d={duration}"
+            source = f"aevalsrc=0.022*sin(2*PI*(118+5*sin(2*PI*0.23*t))*t)+0.015*sin(2*PI*(530+18*sin(2*PI*0.6*t))*t)+0.010*sin(2*PI*(1120+32*sin(2*PI*0.35*t))*t)+0.006*sin(2*PI*(1750+45*sin(2*PI*0.48*t))*t):s=48000:d={duration}"
             filt = "lowpass=f=2800,highpass=f=100"
         elif name == "zoo":
-            source = f"aevalsrc=0.012*sin(2*PI*(1750+420*sin(2*PI*1.15*t))*t)*abs(sin(2*PI*0.72*t))+0.008*sin(2*PI*(2350+560*sin(2*PI*0.83*t))*t)*abs(sin(2*PI*0.51*t))+0.004*sin(2*PI*(3100+300*sin(2*PI*1.4*t))*t)*abs(sin(2*PI*0.38*t)):s=48000:d={duration}"
+            source = f"aevalsrc=0.026*sin(2*PI*(1750+420*sin(2*PI*1.15*t))*t)*abs(sin(2*PI*0.72*t))+0.018*sin(2*PI*(2350+560*sin(2*PI*0.83*t))*t)*abs(sin(2*PI*0.51*t))+0.010*sin(2*PI*(3100+300*sin(2*PI*1.4*t))*t)*abs(sin(2*PI*0.38*t)):s=48000:d={duration}"
             filt = "highpass=f=900,lowpass=f=5200"
         elif name == "clinic":
-            source = f"aevalsrc=0.004*sin(2*PI*60*t)+0.003*sin(2*PI*120*t)+0.004*sin(2*PI*880*t)*(0.5+0.5*sin(2*PI*0.42*t)):s=48000:d={duration}"
+            source = f"aevalsrc=0.009*sin(2*PI*60*t)+0.006*sin(2*PI*120*t)+0.012*sin(2*PI*880*t)*(0.5+0.5*sin(2*PI*0.42*t)):s=48000:d={duration}"
             filt = "lowpass=f=1600,highpass=f=45"
         elif name == "library":
             source = f"aevalsrc=0.0018*sin(2*PI*120*t)+0.001*sin(2*PI*240*t):s=48000:d={duration}"
             filt = "lowpass=f=900"
         elif name == "school":
-            source = f"aevalsrc=0.009*sin(2*PI*(130+8*sin(2*PI*0.27*t))*t)+0.006*sin(2*PI*(620+30*sin(2*PI*0.6*t))*t)+0.004*sin(2*PI*(1450+50*sin(2*PI*0.48*t))*t):s=48000:d={duration}"
+            source = f"aevalsrc=0.022*sin(2*PI*(130+8*sin(2*PI*0.27*t))*t)+0.015*sin(2*PI*(620+30*sin(2*PI*0.6*t))*t)+0.010*sin(2*PI*(1450+50*sin(2*PI*0.48*t))*t):s=48000:d={duration}"
             filt = "lowpass=f=3400,highpass=f=100"
         elif name == "museum":
             source = f"anoisesrc=color=pink:amplitude=0.009:sample_rate=48000:duration={duration}"
@@ -375,13 +375,13 @@ def _write_ambience(names, duration, target):
             source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=1800,highpass=f=180"
         elif name == "market":
-            source = f"aevalsrc=0.010*sin(2*PI*(125+7*sin(2*PI*0.31*t))*t)+0.007*sin(2*PI*(610+28*sin(2*PI*0.72*t))*t)+0.005*sin(2*PI*(1280+55*sin(2*PI*0.47*t))*t)+0.003*sin(2*PI*(1960+70*sin(2*PI*0.55*t))*t):s=48000:d={duration}"
+            source = f"aevalsrc=0.025*sin(2*PI*(125+7*sin(2*PI*0.31*t))*t)+0.018*sin(2*PI*(610+28*sin(2*PI*0.72*t))*t)+0.012*sin(2*PI*(1280+55*sin(2*PI*0.47*t))*t)+0.008*sin(2*PI*(1960+70*sin(2*PI*0.55*t))*t):s=48000:d={duration}"
             filt = "lowpass=f=3200,highpass=f=130"
         elif name == "mall":
-            source = f"aevalsrc=0.007*sin(2*PI*(132+4*sin(2*PI*0.19*t))*t)+0.005*sin(2*PI*(570+16*sin(2*PI*0.53*t))*t)+0.003*sin(2*PI*(1180+24*sin(2*PI*0.41*t))*t):s=48000:d={duration}"
+            source = f"aevalsrc=0.018*sin(2*PI*(132+4*sin(2*PI*0.19*t))*t)+0.012*sin(2*PI*(570+16*sin(2*PI*0.53*t))*t)+0.008*sin(2*PI*(1180+24*sin(2*PI*0.41*t))*t):s=48000:d={duration}"
             filt = "lowpass=f=2800,highpass=f=110"
         elif name == "restaurant":
-            source = f"aevalsrc=0.008*sin(2*PI*(120+5*sin(2*PI*0.22*t))*t)+0.005*sin(2*PI*(550+22*sin(2*PI*0.63*t))*t)+0.003*sin(2*PI*(1320+30*sin(2*PI*0.44*t))*t):s=48000:d={duration}"
+            source = f"aevalsrc=0.020*sin(2*PI*(120+5*sin(2*PI*0.22*t))*t)+0.012*sin(2*PI*(550+22*sin(2*PI*0.63*t))*t)+0.008*sin(2*PI*(1320+30*sin(2*PI*0.44*t))*t):s=48000:d={duration}"
             filt = "lowpass=f=3000,highpass=f=100"
         elif name == "kitchen":
             source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
