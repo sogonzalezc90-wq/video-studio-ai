@@ -169,6 +169,8 @@ def _ambience(text):
     t = text.lower()
     found = []
     rules = {
+        "rain": ("lluvia", "llueve", "tormenta", "charcos", "llovizna", "trueno", "relámpago", "relampago", "rain"),
+        "wind": ("viento", "ventoso", "ráfaga", "rafaga", "brisa", "ventisca", "wind"),
         "zoo": ("zoológico", "zoologico", "zoo", "safari", "aviario", "recinto animal", "fauna silvestre", "jaula"),
         "clinic": ("consultorio", "clínica", "clinica", "hospital", "urgencias", "enfermería", "enfermeria", "sala de espera", "quirófano", "quirofano"),
         "market": ("mercado", "tianguis", "puesto", "vendedor", "vendedora", "central de abasto", "pasillo de mercado"),
@@ -227,7 +229,7 @@ def _effects(text):
         "medical_beep": ("monitor cardíaco", "monitor cardiaco", "monitor médico", "monitor medico", "electrocardiograma", "signos vitales"),
         "train": ("tren", "metro", "vagón", "vagon", "andén", "anden"),
         "aircraft": ("avión", "avion", "aeronave", "despegue", "aterrizaje", "helicóptero", "helicoptero"),
-        "cooking": ("freír", "freir", "sartén", "sarten", "hervir", "cocinar", "cocinando", "parrilla", "horno"),
+        "cooking": ("freír", "freir", "sartén", "sarten", "hervir", "cocinar", "cocinando", "fríe", "frie", "chef fríe", "chef frie", "parrilla", "horno"),
         "insects": ("grillos", "cigarras", "chicharras", "insectos"),
         "fire": ("fuego", "fogata", "chimenea", "llamas", "incendio"),
     }
