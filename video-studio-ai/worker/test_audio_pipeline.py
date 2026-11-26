@@ -87,7 +87,8 @@ class AudioPipelineTests(unittest.TestCase):
                 ["engine", "footsteps", "door", "impact", "tools", "crowd",
                  "birds", "animal", "dog", "cat", "horse", "cash_register",
                  "shopping_cart", "medical_beep", "train", "aircraft", "cooking",
-                 "insects", "fire"], 1.5, str(effects)
+                 "insects", "fire", "pages", "school_bell", "elevator", "bus",
+                 "construction", "gym", "church_bell"], 1.5, str(effects)
             )
             for path in (music, ambience, effects):
                 self.assertTrue(path.exists())
@@ -105,6 +106,17 @@ class AudioPipelineTests(unittest.TestCase):
             "Un restaurante con comensales": "restaurant",
             "Un autódromo con pista de carreras y boxes": "race",
             "Una avenida con tráfico y semáforos": "city",
+            "Una biblioteca silenciosa": "library",
+            "Una escuela durante el recreo": "school",
+            "Un museo con una exposición": "museum",
+            "El lobby de un hotel": "hotel",
+            "Una iglesia con campanario": "church",
+            "Un parque público": "park",
+            "Una piscina techada": "pool",
+            "Una terminal de autobuses": "bus",
+            "Una obra con maquinaria pesada": "construction",
+            "Un teatro con butacas": "theater",
+            "Un gimnasio con pesas": "gym",
         }
         for prompt, expected in cases.items():
             with self.subTest(prompt=prompt):
@@ -121,12 +133,14 @@ class AudioPipelineTests(unittest.TestCase):
         prompt = (
             "Los leones rugen y los pájaros cantan. El monitor cardíaco emite pitidos. "
             "La caja registradora suena, el carrito rueda, el chef fríe, el avión despega "
-            "y el tren llega."
+            "y el tren llega. Alguien pasa páginas, suena el timbre escolar y las campanas, "
+            "se abre el elevador, pasa un autobús, trabajan con un taladro y levantan pesas."
         )
         effects = audio._effects(prompt)
         for name in (
             "animal", "birds", "medical_beep", "cash_register",
-            "shopping_cart", "cooking", "aircraft", "train"
+            "shopping_cart", "cooking", "aircraft", "train", "pages",
+            "school_bell", "church_bell", "elevator", "bus", "construction", "gym"
         ):
             with self.subTest(effect=name):
                 self.assertIn(name, effects)
