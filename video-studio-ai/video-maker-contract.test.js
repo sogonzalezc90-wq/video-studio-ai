@@ -6,14 +6,15 @@ const maker = fs.readFileSync("public/video-maker.js", "utf8");
 const app = fs.readFileSync("public/app.js", "utf8");
 const html = fs.readFileSync("public/index.html", "utf8");
 
-test("video renderer requests Spanish speech for detected dialogue", () => {
+test("video renderer converts all detected dialogue into one quota-aware Spanish voice track", () => {
   assert.match(maker, /loadDialogueVoices/);
   assert.match(maker, /action:"generate_speech"/);
   assert.match(maker, /decodeAudioData/);
   assert.match(maker, /source\.start\(/);
-  assert.match(maker, /analysis\.hasDialogue/);
-  assert.match(maker, /VSAActiveManifest\?\.characters/);
-  assert.match(maker, /character=>character\.name===item\.character/);
+  assert.match(maker, /dialogueRows=scenes\.flatMap/);
+  assert.match(maker, /join\(" … "\)/);
+  assert.match(maker, /video-voice/);
+  assert.match(maker, /Se alcanzó la cuota gratuita diaria de voz/);
 });
 
 test("speech requests use the authenticated Supabase session", () => {
