@@ -452,8 +452,8 @@ def _write_sfx(names, duration, target):
             src = f"anoisesrc=color=white:amplitude=0.06:sample_rate=48000:duration={duration}"
             filt = "highpass=f=1200,lowpass=f=6500,tremolo=f=7:d=0.6,volume=0.35"
         elif name == "crowd":
-            src = f"anoisesrc=color=pink:amplitude=0.045:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=900:w=1200,volume=0.45"
+            src = f"aevalsrc=0.026*sin(2*PI*(125+6*sin(2*PI*0.27*t))*t)+0.018*sin(2*PI*(590+24*sin(2*PI*0.61*t))*t)+0.012*sin(2*PI*(1280+45*sin(2*PI*0.43*t))*t)+0.007*sin(2*PI*(1900+60*sin(2*PI*0.52*t))*t):s=48000:d={duration}"
+            filt = "lowpass=f=3200,highpass=f=100,volume=0.55"
         elif name == "gunshot":
             src = f"anoisesrc=color=white:amplitude=0.18:sample_rate=48000:duration={duration}"
             filt = "highpass=f=900,lowpass=f=7500,agate=threshold=0.025:ratio=12,volume=0.65"
@@ -482,8 +482,8 @@ def _write_sfx(names, duration, target):
             src = f"aevalsrc=0.12*exp(-18*abs(t-0.08))*sin(2*PI*1800*t)+0.08*exp(-24*abs(t-0.12))*sin(2*PI*2400*t):s=48000:d={duration}"
             filt = "highpass=f=900,lowpass=f=6500,volume=0.55"
         elif name == "laughter":
-            src = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=900:w=1500,tremolo=f=4:d=0.72,volume=0.28"
+            src = f"aevalsrc=0.018*sin(2*PI*(520+90*sin(2*PI*3.2*t))*t)*abs(sin(2*PI*2.1*t))+0.010*sin(2*PI*(1050+130*sin(2*PI*2.7*t))*t)*abs(sin(2*PI*1.8*t)):s=48000:d={duration}"
+            filt = "bandpass=f=300:w=1800,volume=0.5"
         elif name in ("birds", "animal", "dog", "cat", "horse"):
             base = {"birds": 1900, "animal": 260, "dog": 420, "cat": 720, "horse": 180}[name]
             src = f"aevalsrc=0.07*sin(2*PI*({base}+65*sin(2*PI*1.3*t))*t)*abs(sin(2*PI*2.1*t)):s=48000:d={duration}"
@@ -492,8 +492,8 @@ def _write_sfx(names, duration, target):
             src = f"aevalsrc=0.12*exp(-24*abs(t-0.12))*sin(2*PI*1550*t)+0.08*exp(-28*abs(t-0.2))*sin(2*PI*2100*t):s=48000:d={duration}"
             filt = "highpass=f=700,lowpass=f=6000,volume=0.5"
         elif name == "shopping_cart":
-            src = f"anoisesrc=color=white:amplitude=0.035:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=1800,lowpass=f=7200,tremolo=f=5:d=0.55,volume=0.35"
+            src = f"aevalsrc=0.018*sin(2*PI*(680+65*sin(2*PI*1.8*t))*t)+0.009*sin(2*PI*(1360+110*sin(2*PI*1.8*t))*t):s=48000:d={duration}"
+            filt = "bandpass=f=500:w=2200,tremolo=f=2.4:d=0.55,volume=0.42"
         elif name == "medical_beep":
             src = f"aevalsrc=0.055*sin(2*PI*880*t)*lt(mod(t\\,1.25)\\,0.09):s=48000:d={duration}"
             filt = "volume=0.55"
