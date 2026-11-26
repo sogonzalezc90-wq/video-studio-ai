@@ -114,6 +114,27 @@ class AudioPipelineTests(unittest.TestCase):
             self.assertGreater(rms, 80, "Café ambience must be audible in the rendered track")
             self.assertLess(crossing_ratio, 0.35, "Café ambience must not resemble broadband static")
 
+    def test_voice_mastering_and_final_loudness_contract(self):
+        source = pathlib.Path(audio.__file__).read_text(encoding="utf-8")
+        self.assertIn('equalizer=f=3200:t=q:w=1.0:g=2.5', source)
+        self.assertIn('volume=2.0,acompressor=threshold=-22dB:ratio=3.0', source)
+        self.assertIn('loudnorm=I=-14:LRA=9:TP=-1.5', source)
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
+    def test_final_audio_is_rendered_with_audible_normalized_level(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = audio.build_audio_track(
+                "ESCENA 1: INT. CAFETERÍA - TARDE. Dos amigos conversan y chocan sus tazas.",
+                3.0,
+                folder,
+            )
+            self.assertTrue(output.exists())
+            probe = audio._run([
+                "ffmpeg", "-hide_banner", "-i", str(output),
+                "-af", "volumedetect", "-f", "null", "-"
+            ])
+            self.assertIn("max_volume:", probe.stderr)
+            self.assertNotIn("max_volume: -inf dB", probe.stderr)
     def test_requested_public_and_service_locations_are_detected(self):
         cases = {
             "Un día en el zoológico con leones y aves": "zoo",
