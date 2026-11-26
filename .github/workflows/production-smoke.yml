@@ -68,13 +68,21 @@ jobs:
                     && grep -q 'paginas' <<< "$renderer" \
                     && grep -q 'campanas_iglesia' <<< "$renderer" \
                     && grep -q 'elevador' <<< "$renderer"; then
-                    api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
-                    if grep -q 'free-allocation-only-no-provider-fallback' <<< "$api"; then
-                      echo "PRODUCTION AUDIO VERIFIED"
-                      echo "Cloudflare serves the contextual scene analyzer, browser sound renderer, and free-only API policy."
-                      exit 0
+                    maker=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/video-maker.js?v=$ASSET_VERSION")
+                    if grep -q 'voiceCompressor' <<< "$maker" \
+                      && grep -q 'voiceGain.gain.value' <<< "$maker" \
+                      && grep -q 'source.playbackRate.value=1' <<< "$maker" \
+                      && grep -q 'source.start(context.currentTime+1.1)' <<< "$maker"; then
+                      api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
+                      if grep -q 'free-allocation-only-no-provider-fallback' <<< "$api"; then
+                        echo "PRODUCTION AUDIO VERIFIED"
+                        echo "Cloudflare serves the contextual soundscapes, normalized Spanish dialogue, and free-only API policy."
+                        exit 0
+                      fi
+                      echo "Attempt $attempt/24: API policy response is not ready"
+                    else
+                      echo "Attempt $attempt/24: normalized Spanish dialogue renderer is missing"
                     fi
-                    echo "Attempt $attempt/24: API policy response is not ready"
                   else
                     echo "Attempt $attempt/24: browser sound renderer is missing required context cues"
                   fi
