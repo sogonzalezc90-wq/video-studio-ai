@@ -112,7 +112,18 @@ test("recognizes every requested production location and keeps its ambience on s
     ["Cafetería", "ambiente_cafeteria"],
     ["Restaurante", "ambiente_restaurante"],
     ["Autódromo y pista de carreras", "ambiente_autodromo"],
-    ["Calle y avenida", "ambiente_calle"]
+    ["Calle y avenida", "ambiente_calle"],
+    ["Biblioteca", "ambiente_biblioteca"],
+    ["Escuela", "ambiente_escuela"],
+    ["Museo", "ambiente_museo"],
+    ["Hotel", "ambiente_hotel"],
+    ["Iglesia", "ambiente_iglesia"],
+    ["Parque", "ambiente_parque"],
+    ["Piscina", "ambiente_piscina"],
+    ["Autobús", "ambiente_autobus"],
+    ["Construcción", "ambiente_construccion"],
+    ["Teatro", "ambiente_teatro"],
+    ["Gimnasio", "ambiente_gimnasio"]
   ];
   examples.forEach(([location, cue], index) => {
     const result = engine.analyze([
