@@ -78,8 +78,16 @@ class AudioPipelineTests(unittest.TestCase):
             ambience = root / "ambience.wav"
             effects = root / "effects.wav"
             audio._write_music("action", 1.5, str(music))
-            audio._write_ambience(["rain", "race", "night"], 1.5, str(ambience))
-            audio._write_sfx(["engine", "footsteps", "door", "impact", "tools", "crowd"], 1.5, str(effects))
+            audio._write_ambience(
+                ["rain", "race", "night", "zoo", "clinic", "market", "mall",
+                 "restaurant", "cafe", "city", "airport", "kitchen"], 1.5, str(ambience)
+            )
+            audio._write_sfx(
+                ["engine", "footsteps", "door", "impact", "tools", "crowd",
+                 "birds", "animal", "dog", "cat", "horse", "cash_register",
+                 "shopping_cart", "medical_beep", "train", "aircraft", "cooking",
+                 "insects", "fire"], 1.5, str(effects)
+            )
             for path in (music, ambience, effects):
                 self.assertTrue(path.exists())
                 self.assertGreater(path.stat().st_size, 1000)
