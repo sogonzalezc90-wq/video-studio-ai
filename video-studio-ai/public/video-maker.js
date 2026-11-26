@@ -116,7 +116,7 @@
     source.connect(voiceGain);voiceGain.connect(voiceFilter);voiceFilter.connect(voiceCompressor);voiceCompressor.connect(destination);
     // Start after MediaRecorder has begun so the first syllable cannot be missed.
     source.start(context.currentTime+1.1);
-    return ()=>{try{source.stop();}catch(_){}try{source.disconnect();gain.disconnect();}catch(_){}};
+    return ()=>{try{source.stop();}catch(_){}try{source.disconnect();voiceGain.disconnect();voiceFilter.disconnect();voiceCompressor.disconnect();}catch(_){}};
   }
 
   async function createVideo(){
