@@ -96,6 +96,24 @@ class AudioPipelineTests(unittest.TestCase):
                 self.assertAlmostEqual(audio._duration(str(path)), 1.5, delta=0.1)
 
 
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
+    def test_cafe_ambience_is_tonal_and_not_broadband_static(self):
+        import array
+        import wave
+        with tempfile.TemporaryDirectory() as folder:
+            output = pathlib.Path(folder) / "cafe.wav"
+            audio._write_ambience(["cafe"], 2.0, str(output))
+            with wave.open(str(output), "rb") as wav:
+                samples = array.array("h", wav.readframes(wav.getnframes()))
+            if sys.byteorder != "little":
+                samples.byteswap()
+            signs = [sample >= 0 for sample in samples]
+            crossings = sum(1 for left, right in zip(signs, signs[1:]) if left != right)
+            crossing_ratio = crossings / max(1, len(signs) - 1)
+            rms = (sum(sample * sample for sample in samples) / max(1, len(samples))) ** 0.5
+            self.assertGreater(rms, 80, "Café ambience must be audible in the rendered track")
+            self.assertLess(crossing_ratio, 0.35, "Café ambience must not resemble broadband static")
+
     def test_requested_public_and_service_locations_are_detected(self):
         cases = {
             "Un día en el zoológico con leones y aves": "zoo",
