@@ -98,13 +98,24 @@
     const bytes=await response.arrayBuffer();
     if(!bytes.byteLength)throw new Error("El motor de voz devolvió un archivo vacío.");
     const decoded=await context.decodeAudioData(bytes.slice(0));
-    const source=context.createBufferSource(),gain=context.createGain();
+    const source=context.createBufferSource(),voiceGain=context.createGain();
+    const voiceFilter=context.createBiquadFilter(),voiceCompressor=context.createDynamicsCompressor();
     source.buffer=decoded;
-    const available=Math.max(1,duration-.8);
-    source.playbackRate.value=Math.min(1.35,Math.max(1,decoded.duration/available));
-    gain.gain.value=1;
-    source.connect(gain);gain.connect(destination);
-    source.start(context.currentTime+.65);
+    // Preserve natural speech speed; normalize quiet TTS output before a gentle compressor.
+    let sumSquares=0,samples=0;
+    for(let channel=0;channel<decoded.numberOfChannels;channel++){
+      const data=decoded.getChannelData(channel),stride=Math.max(1,Math.floor(data.length/12000));
+      for(let i=0;i<data.length;i+=stride){sumSquares+=data[i]*data[i];samples++;}
+    }
+    const rms=Math.sqrt(sumSquares/Math.max(1,samples));
+    voiceGain.gain.value=Math.min(4.5,Math.max(1.25,.19/Math.max(.001,rms)));
+    voiceFilter.type="highpass";voiceFilter.frequency.value=75;
+    voiceCompressor.threshold.value=-18;voiceCompressor.knee.value=12;
+    voiceCompressor.ratio.value=3;voiceCompressor.attack.value=.003;voiceCompressor.release.value=.18;
+    source.playbackRate.value=1;
+    source.connect(voiceGain);voiceGain.connect(voiceFilter);voiceFilter.connect(voiceCompressor);voiceCompressor.connect(destination);
+    // Start after MediaRecorder has begun so the first syllable cannot be missed.
+    source.start(context.currentTime+1.1);
     return ()=>{try{source.stop();}catch(_){}try{source.disconnect();gain.disconnect();}catch(_){}};
   }
 
@@ -155,7 +166,7 @@
         destination.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
       }
       const mimeType=chooseRecorderType();
-      recorder=new MediaRecorder(stream,mimeType?{mimeType,videoBitsPerSecond:4500000}:undefined);
+      recorder=new MediaRecorder(stream,mimeType?{mimeType,videoBitsPerSecond:4500000,audioBitsPerSecond:192000}:undefined);
       const chunks=[];
       recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data);};
       const stopped=new Promise((resolve,reject)=>{
