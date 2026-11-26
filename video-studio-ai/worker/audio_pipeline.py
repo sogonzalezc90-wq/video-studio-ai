@@ -672,7 +672,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
                 f"[{3+line_index}:a]aresample=48000,"
                 f"asetrate={int(48000*pitch)},aresample=48000,"
                 f"atempo={1.0/pitch:.6f},adelay={int(start*1000)}|{int(start*1000)},"
-                f"highpass=f=75,lowpass=f=9500,volume=1.75,acompressor=threshold=-20dB:ratio=2.4:attack=5:release=90[{label}]"
+                f"highpass=f=85,equalizer=f=260:t=q:w=1.0:g=-2,equalizer=f=3200:t=q:w=1.0:g=2.5,lowpass=f=10500,volume=2.0,acompressor=threshold=-22dB:ratio=3.0:attack=4:release=110,alimiter=limit=0.92[{label}]"
             )
             mix_labels.append(f"[{label}]")
             dialogue_records.append({
@@ -713,7 +713,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
     concat.write_text("".join(f"file '{p.as_posix()}'\n" for p in scene_files), encoding="utf-8")
     output = work_dir / "VIDEO_STUDIO_AI_audio.wav"
     _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat),
-          "-t", duration, "-af", "loudnorm=I=-18:LRA=11:TP=-2",
+          "-t", duration, "-af", "loudnorm=I=-14:LRA=9:TP=-1.5",
           "-ar", 48000, "-ac", 2, "-c:a", "pcm_s16le", str(output)])
     actual = _duration(str(output))
     if abs(actual - duration) > 0.10:
