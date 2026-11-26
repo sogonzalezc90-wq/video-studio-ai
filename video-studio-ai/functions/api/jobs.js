@@ -153,7 +153,7 @@ async function createVideoJob(request,env,body,auth) {
     voice:String(segment.voiceAssignments?.[line.character]||""),
     time_seconds:Number(segment.startSeconds||0)+Math.max(0,Number(line.atSeconds)||0)
   }))).filter(line=>line.speaker&&line.text.length>1);
-  const effectMap={motor_automovil:"engine",motor_motocicleta:"engine",pasos:"footsteps",herramientas_taller:"tools",puerta:"door",impacto:"impact"};
+  const effectMap={motor_automovil:"engine",motor_motocicleta:"engine",pasos:"footsteps",herramientas_taller:"tools",puerta:"door",impacto:"impact",tazas_vasos:"cups",risas:"laughter",conversaciones_fondo:"crowd"};
   const plannedEffects=manifestSegments.flatMap(segment=>(segment.audioCues||[])
     .map(cue=>effectMap[cue]).filter(Boolean).map(name=>({
       name,time_seconds:Number(segment.startSeconds||0)+0.25,
