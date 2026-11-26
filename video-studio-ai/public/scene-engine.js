@@ -266,15 +266,15 @@
       if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
       if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
-      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.004);addGlassClinks(ctx,master,when,2);}
-      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.0045);
+      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.014);addGlassClinks(ctx,master,when,2);}
+      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.016);
       if(s.types.includes("cups"))addGlassClinks(ctx,master,when,3);
       if(s.types.includes("laughter")){tone(ctx,master,when+1.1,520,.22,"triangle",.006,690);tone(ctx,master,when+1.38,650,.2,"triangle",.005,790);}
       if(s.types.includes("zoo")||s.types.includes("birds"))addBirdChirps(ctx,master,when,len);
       if(s.types.includes("clinic")||s.types.includes("medical")){tone(ctx,master,when+1.2,880,.08,"sine",.006,880);tone(ctx,master,when+3.1,880,.08,"sine",.006,880);}
-      if(s.types.includes("market")||s.types.includes("mall"))addMurmur(ctx,master,when,len,.005);
-      if(s.types.includes("restaurant")||s.types.includes("kitchen")){addMurmur(ctx,master,when,len,.0035);addGlassClinks(ctx,master,when,3);}
-      if(s.types.includes("racetrack")){addEngineRev(ctx,master,when,len,.032);addMurmur(ctx,master,when,len,.0025);}
+      if(s.types.includes("market")||s.types.includes("mall"))addMurmur(ctx,master,when,len,.016);
+      if(s.types.includes("restaurant")||s.types.includes("kitchen")){addMurmur(ctx,master,when,len,.012);addGlassClinks(ctx,master,when,3);}
+      if(s.types.includes("racetrack")){addEngineRev(ctx,master,when,len,.032);addMurmur(ctx,master,when,len,.009);}
       if(s.types.includes("street"))addPassingTraffic(ctx,master,when,len);
       if(s.types.includes("cash"))for(let k=0;k<2;k++)tone(ctx,master,when+.7+k*1.3,1450,.08,"sine",.012,1450);
       if(s.types.includes("shopping"))noise(ctx,master,when,len,.008,"bandpass",2800);
