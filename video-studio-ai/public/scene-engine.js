@@ -2,20 +2,41 @@
   "use strict";
 
   const RULES = [
-    {type:"car",label:"Automóvil / motor",re:/\b(auto|autom[oó]vil|coche|carro|veh[ií]culo|motor|circuito|carrera|pista|acelera|frena|neum[aá]tic)/i},
+    {type:"zoo",label:"Zoológico / fauna",re:/\b(zool[oó]gico|zoo|safari|aviario|acuario|jaula|recinto animal|fauna silvestre)\b/i},
+    {type:"clinic",label:"Consultorio / clínica",re:/\b(consultorio|cl[ií]nica|hospital|urgencias|enfermer[ií]a|quir[oó]fano|sala de espera|paciente|m[eé]dico|doctora|doctor)\b/i},
+    {type:"market",label:"Mercado / tianguis",re:/\b(mercado|tianguis|puesto|vendedor|frutas|verduras|pasillo de mercado|central de abasto)\b/i},
+    {type:"mall",label:"Plaza comercial",re:/\b(plaza comercial|centro comercial|mall|tienda departamental|local comercial|patio de comidas|escaleras el[eé]ctricas)\b/i},
+    {type:"restaurant",label:"Restaurante",re:/\b(restaurante|comensales|mesero|mesera|chef|comedor|men[uú]|reservaci[oó]n)\b/i},
+    {type:"cafe",label:"Cafetería",re:/\b(caf[eé]|cafeter[ií]a|barista|m[aá]quina de espresso|terraza de caf[eé])\b/i},
+    {type:"racetrack",label:"Autódromo / pista de carreras",re:/\b(aut[oó]dromo|circuito|pista de carreras|boxes|parrilla de salida|bandera a cuadros|pit lane|carrera de autos)\b/i},
+    {type:"street",label:"Calle / avenida",re:/\b(calle|avenida|boulevard|cruce peatonal|sem[aá]foro|banqueta|tr[aá]fico|claxon|bocina)\b/i},
+    {type:"car",label:"Automóvil / motor",re:/\b(auto|autom[oó]vil|coche|carro|veh[ií]culo|motor|acelera|frena|neum[aá]tic)\b/i},
     {type:"motorcycle",label:"Motocicleta",re:/\b(moto|motocicleta|motociclista)\b/i},
     {type:"rain",label:"Lluvia / tormenta",re:/\b(lluvia|llueve|tormenta|llovizna|trueno|rel[aá]mpago)\b/i},
-    {type:"wind",label:"Viento / exterior",re:/\b(viento|ventisca|bosque|[aá]rboles|monta[nñ]a|desierto|azotea|amanecer)\b/i},
-    {type:"footsteps",label:"Pasos",re:/\b(caminar|camina|camin[oó]|pasos|corre|corriendo|huye|entr[oó]|sale)\b/i},
-    {type:"workshop",label:"Taller / herramientas",re:/\b(taller|reparando|reparar|herramientas|llave|soldar|mec[aá]nic)\b/i},
+    {type:"wind",label:"Viento / exterior",re:/\b(viento|ventisca|brisa|r[aá]faga|bosque|[aá]rboles|monta[nñ]a|desierto|azotea|amanecer)\b/i},
+    {type:"footsteps",label:"Pasos",re:/\b(caminar|camina|camin[oó]|pasos|pisadas|corre|corriendo|huye|entr[oó]|sale)\b/i},
+    {type:"workshop",label:"Taller / herramientas",re:/\b(taller|reparando|reparar|herramientas|llave inglesa|soldar|mec[aá]nic)\b/i},
     {type:"door",label:"Puerta / interior",re:/\b(puerta|abre|abri[oó]|cerr[oó]|habitaci[oó]n|cuarto|casa|oficina)\b/i},
     {type:"impact",label:"Golpe / acción",re:/\b(golpe|disparo|explosi[oó]n|cae|rompe|choque|pelea|frenada)\b/i},
     {type:"night",label:"Noche / suspenso",re:/\b(noche|oscuro|sombra|misterio|miedo|suspenso|silencio|terror)\b/i},
-    {type:"cafe",label:"Cafetería / restaurante",re:/\b(caf[eé]|cafeter[ií]a|restaurante|terraza|bar|mesas|comedor)\b/i},
-    {type:"traffic",label:"Tráfico / calle",re:/\b(tr[aá]fico|calle|avenida|bocina|claxon|coches pasando|veh[ií]culos pasando)\b/i},
-    {type:"cups",label:"Tazas / vasos",re:/\b(taza|tazas|vaso|vasos|copa|copas|cubiertos|brindis)\b/i},
-    {type:"laughter",label:"Risas / carcajadas",re:/\b(risa|risas|riendo|r[ií]e|carcajada|carcajadas)\b/i},
-    {type:"chatter",label:"Conversaciones de fondo",re:/\b(conversaci[oó]n|conversan|charlan|murmullos|voces lejanas|gente hablando|bullicio)\b/i}
+    {type:"birds",label:"Aves / pájaros",re:/\b(ave|aves|p[aá]jaro|p[aá]jaros|loro|guacamaya|flamenco|ping[uü]ino|gaviota|gallo|gallina)\b/i},
+    {type:"animal",label:"Animales",re:/\b(animal|animales|rugido|le[oó]n|tigre|elefante|mono|monos|jirafa|cebra|oso|lobo|foca|delf[ií]n)\b/i},
+    {type:"dog",label:"Perro",re:/\b(perro|perros|ladrido|ladra|ladran)\b/i},
+    {type:"cat",label:"Gato",re:/\b(gato|gata|gatito|maullido|ma[uú]lla)\b/i},
+    {type:"horse",label:"Caballo",re:/\b(caballo|caballos|relincho|relincha|galope|galopa)\b/i},
+    {type:"kitchen",label:"Cocina / preparación de alimentos",re:/\b(cocina|cocinero|cocinera|fre[ií]r|sart[eé]n|hervir|horno|parrilla|licuadora)\b/i},
+    {type:"crowd",label:"Multitud / público",re:/\b(multitud|p[uú]blico|gente|aglomeraci[oó]n|aplausos|ovaci[oó]n|bullicio)\b/i},
+    {type:"chatter",label:"Conversaciones de fondo",re:/\b(conversaci[oó]n|conversan|charlan|murmullos|voces lejanas|gente hablando|clientes hablando)\b/i},
+    {type:"cups",label:"Vajilla / cubiertos",re:/\b(taza|tazas|vaso|vasos|copa|copas|cubiertos|platos|brindis|loza)\b/i},
+    {type:"cash",label:"Caja / cobro",re:/\b(caja registradora|cobrar|cobro|terminal bancaria|cajero|esc[aá]ner de productos|c[oó]digo de barras)\b/i},
+    {type:"shopping",label:"Carritos / compras",re:/\b(carrito|carritos|carro de compras|canasta|compras|supermercado|autoservicio)\b/i},
+    {type:"medical",label:"Equipo médico",re:/\b(monitor card[ií]aco|monitor m[eé]dico|electrocardiograma|bip|signos vitales|equipo m[eé]dico)\b/i},
+    {type:"alarm",label:"Alarma / sirena",re:/\b(alarma|sirena|alerta|evacuaci[oó]n)\b/i},
+    {type:"train",label:"Tren / metro",re:/\b(tren|metro|estaci[oó]n|and[eé]n|ferrocarril|vag[oó]n)\b/i},
+    {type:"airport",label:"Aeropuerto / avión",re:/\b(aeropuerto|avi[oó]n|avioneta|despegue|aterrizaje|terminal a[eé]rea)\b/i},
+    {type:"water",label:"Agua / piscina",re:/\b(agua|piscina|alberca|fuente|cascada|chapoteo|olas|mar|playa)\b/i},
+    {type:"fire",label:"Fuego",re:/\b(fuego|fogata|hoguera|chimenea|incendio|llamas)\b/i},
+    {type:"insects",label:"Insectos / grillos",re:/\b(grillos|cigarras|insectos|chicharras)\b/i}
   ];
 
   const DIALOGUE = /^\s*([\p{L}][\p{L}\p{M} .'-]{0,35})\s*:\s*(.+)$/u;
@@ -32,8 +53,10 @@
   function classify(text) {
     const types=RULES.filter(x=>x.re.test(text)).map(x=>x.type);
     const mood=types.includes("night")||types.includes("impact")?"suspenso":
-      types.includes("car")?"accion":types.includes("rain")?"melancolia":
-      types.includes("workshop")||types.includes("wind")?"drama":"cinematografico";
+      types.includes("car")||types.includes("motorcycle")||types.includes("racetrack")?"accion":
+      types.includes("rain")?"melancolia":
+      types.includes("zoo")||types.includes("market")||types.includes("mall")||types.includes("restaurant")||types.includes("cafe")?"calido":
+      types.includes("workshop")||types.includes("wind")||types.includes("clinic")?"drama":"cinematografico";
     return {types,labels:RULES.filter(x=>types.includes(x.type)).map(x=>x.label),mood};
   }
   function parseDialogue(line) {
@@ -178,6 +201,18 @@
       if(s.types.includes("chatter"))noise(ctx,master,when,len,.008,"bandpass",1850);
       if(s.types.includes("cups"))for(let k=0;k<3;k++){const at=when+Math.min(len-.2,.7+k*1.35);tone(ctx,master,at,1450+k*170,.12,"sine",.018,900);tone(ctx,master,at+.035,2100+k*90,.08,"sine",.012,1300);}
       if(s.types.includes("laughter"))for(let k=0;k<2;k++){const at=when+Math.min(len-.25,1.1+k*2.1);tone(ctx,master,at,520,.13,"triangle",.009,680);tone(ctx,master,at+.16,620,.12,"triangle",.008,760);}
+      if(s.types.includes("zoo")||s.types.includes("birds")){noise(ctx,master,when,len,.012,"highpass",4200);tone(ctx,master,when+.4,1850,.18,"sine",.006,2350);}
+      if(s.types.includes("clinic")||s.types.includes("medical")){noise(ctx,master,when,len,.006,"lowpass",650);for(let k=0;k<2;k++)tone(ctx,master,when+1.2+k*2.2,880,.07,"sine",.004,880);}
+      if(s.types.includes("market")||s.types.includes("mall")||s.types.includes("crowd")){noise(ctx,master,when,len,.012,"bandpass",1600);noise(ctx,master,when,len,.006,"lowpass",480);}
+      if(s.types.includes("restaurant")||s.types.includes("kitchen")){noise(ctx,master,when,len,.009,"bandpass",2400);for(let k=0;k<3;k++)tone(ctx,master,when+.6+k*1.2,1750,.08,"sine",.009,1150);}
+      if(s.types.includes("racetrack")){tone(ctx,master,when,72,len,"sawtooth",.06,165);noise(ctx,master,when,len,.009,"lowpass",900);}
+      if(s.types.includes("street")){noise(ctx,master,when,len,.012,"lowpass",650);for(let k=0;k<2;k++)tone(ctx,master,when+1.1+k*2.4,520,.09,"square",.004,420);}
+      if(s.types.includes("cash"))for(let k=0;k<2;k++)tone(ctx,master,when+.7+k*1.3,1450,.08,"sine",.012,1450);
+      if(s.types.includes("shopping"))noise(ctx,master,when,len,.008,"bandpass",2800);
+      if(s.types.includes("train")||s.types.includes("airport"))noise(ctx,master,when,len,.014,"lowpass",1000);
+      if(s.types.includes("water"))noise(ctx,master,when,len,.018,"lowpass",2200);
+      if(s.types.includes("dog")||s.types.includes("cat")||s.types.includes("horse")||s.types.includes("animal"))tone(ctx,master,when+Math.min(1,len*.2),260,.22,"triangle",.007,390);
+      if(s.types.includes("alarm"))tone(ctx,master,when,880,.45,"sine",.012,660);
       if(s.dialogues.length){music.gain.setValueAtTime(.035,when);music.gain.setValueAtTime(.1,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
       if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
@@ -197,8 +232,15 @@
       door:"puerta",
       impact:"impacto",
       night:"ambiente_suspenso",
-      cafe:"ambiente_cafeteria",traffic:"trafico_calle",cups:"tazas_vasos",
-      laughter:"risas",chatter:"conversaciones_fondo"
+      zoo:"ambiente_zoologico",clinic:"ambiente_consultorio",market:"ambiente_mercado",
+      mall:"ambiente_plaza_comercial",restaurant:"ambiente_restaurante",cafe:"ambiente_cafeteria",
+      racetrack:"ambiente_autodromo",street:"ambiente_calle",car:"motor_automovil",
+      motorcycle:"motor_motocicleta",rain:"lluvia",wind:"viento_ambiente",footsteps:"pasos",
+      workshop:"herramientas_taller",door:"puerta",impact:"impacto",night:"ambiente_suspenso",
+      birds:"aves",animal:"animales",dog:"perros",cat:"gatos",horse:"caballos",kitchen:"cocina",
+      crowd:"multitud",chatter:"conversaciones_fondo",cups:"tazas_vasos",cash:"caja_registradora",
+      shopping:"carritos_compras",medical:"equipo_medico",alarm:"alarma",train:"tren_metro",
+      airport:"aeropuerto",water:"agua",fire:"fuego",insects:"insectos",laughter:"risas"
     };
     return [...types].map(type=>cueMap[type]).filter(Boolean);
   }
