@@ -128,7 +128,7 @@
     }
     scenes.forEach(s=>{
       const shotText=s.shots.map(x=>x.title+"\n"+x.description).join("\n\n");
-      const text=[s.description,shotText].filter(Boolean).join("\n\n");
+      const text=[s.title,s.description,shotText].filter(Boolean).join("\n\n");
       const c=classify(text);s.types=c.types;s.labels=c.labels;s.mood=c.mood;
       if(s.duration===null&&s.shots.length&&s.shots.every(x=>x.duration!==null))
         s.duration=s.shots.reduce((n,x)=>n+x.duration,0);
