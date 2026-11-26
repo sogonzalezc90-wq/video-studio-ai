@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#031b43">
   <title>VIDEO STUDIO AI</title>
-  <link rel="stylesheet" href="/styles.css?v=20261126-1">
+  <link rel="stylesheet" href="/styles.css?v=20261126-audio1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -117,7 +117,7 @@
         <label>Duración del video<select id="video-duration"><option value="15">15 segundos</option><option value="30" selected>30 segundos</option><option value="60">1 minuto</option><option value="120">2 minutos</option><option value="180">3 minutos</option><option value="240">4 minutos</option><option value="300">5 minutos</option><option value="360">6 minutos</option><option value="420">7 minutos</option><option value="480">8 minutos</option><option value="540">9 minutos</option><option value="600">10 minutos</option><option value="660">11 minutos</option><option value="720">12 minutos</option><option value="780">13 minutos</option><option value="840">14 minutos</option><option value="900">15 minutos</option><option value="960">16 minutos</option><option value="1020">17 minutos</option><option value="1080">18 minutos</option><option value="1140">19 minutos</option><option value="1200">20 minutos</option></select></label>
         <label style="display:flex;align-items:center;gap:9px"><input id="video-audio" type="checkbox" checked style="width:auto;margin:0"> Incluir música, efectos y diálogos hablados (si existen)</label>
         <label>Voz para los diálogos<select id="video-voice"><option value="alvaro" selected>Álvaro</option><option value="sirio">Sirio</option><option value="nestor">Néstor</option><option value="carina">Carina</option><option value="celeste">Celeste</option><option value="diana">Diana</option><option value="selena">Selena</option><option value="estrella">Estrella</option><option value="aquila">Aquila</option><option value="javier">Javier</option></select></label>
-        <p class="hint">Puedes asignar voces a los personajes de cada historia. Elige 15 o 30 segundos para convertir una imagen en un clip de prueba. Si eliges de 1 a 20 minutos, el botón enviará automáticamente la historia a la cola neuronal Wan 2.2. Los selectores se mantienen sincronizados. El compositor mueve capas PNG transparentes de personajes y vehículos en 2D; no genera animación neuronal ni expresiones complejas. El audio de diálogos usa TTS gratuito y los ambientes/efectos son sintetizados.</p>
+        <p class="hint">El analizador identifica el lugar, la actividad y los sonidos descritos en cada escena: zoológicos, consultorios, mercados, plazas comerciales, cafeterías, restaurantes, autódromos, calles y otros entornos. Los diálogos del guion se convierten en voz; en películas largas, Kaggle asigna voces por personaje y sincroniza música, ambientes y efectos. El compositor 2D del modo corto usa sonidos sintetizados; no genera animación neuronal ni expresiones complejas.</p>
         <button id="create-video-btn" class="primary" type="button">Crear video gratis</button>
         <p id="video-message" class="message" role="status"></p>
         <div id="video-preview-wrap" class="hidden">
@@ -129,12 +129,12 @@
     </section>
     <footer>VIDEO STUDIO AI · Proyecto privado · Versión inicial</footer>
   </main>
-  <script src="/app.js?v=20261126-1"></script>
-  <script src="/scene-engine.js?v=20261126-1"></script>
-  <script src="/production-engine.js?v=20261126-1"></script>
-  <script src="/motion-engine.js?v=20261126-1"></script>
-  <script src="/film-renderer.js?v=20261126-1"></script>
-  <script src="/production-ui.js?v=20261126-1"></script>
-<script type="module" src="/video-maker.js?v=20261126-1"></script>
+  <script src="/app.js?v=20261126-audio1"></script>
+  <script src="/scene-engine.js?v=20261126-audio1"></script>
+  <script src="/production-engine.js?v=20261126-audio1"></script>
+  <script src="/motion-engine.js?v=20261126-audio1"></script>
+  <script src="/film-renderer.js?v=20261126-audio1"></script>
+  <script src="/production-ui.js?v=20261126-audio1"></script>
+<script type="module" src="/video-maker.js?v=20261126-audio1"></script>
 </body>
 </html>
