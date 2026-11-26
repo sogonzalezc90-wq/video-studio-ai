@@ -514,6 +514,9 @@ def _write_sfx(names, duration, target):
         elif name == "pages":
             src = f"anoisesrc=color=white:amplitude=0.035:sample_rate=48000:duration={duration}"
             filt = "highpass=f=900,lowpass=f=7200,tremolo=f=5:d=0.25,volume=0.35"
+        elif name == "elevator":
+            src = f"aevalsrc=0.06*sin(2*PI*(660+220*t)*t):s=48000:d={duration}"
+            filt = "afade=t=in:d=0.03,afade=t=out:st=0.35:d=0.3,volume=0.4"
         elif name == "school_bell" or name == "church_bell":
             base = 1450 if name == "school_bell" else 880
             src = f"aevalsrc=0.08*sin(2*PI*{base}*t)+0.04*sin(2*PI*{base*2}*t):s=48000:d={duration}"
