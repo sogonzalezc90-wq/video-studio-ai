@@ -296,8 +296,8 @@ def _write_music(mood, duration, target):
 def _write_ambience(names, duration, target):
     inputs, filters = [], []
     for name in names:
-        if name in ("rain", "city"):
-            source = f"anoisesrc=color=pink:amplitude={0.10 if name == 'rain' else 0.035}:sample_rate=48000:duration={duration}"
+        if name == "rain":
+            source = f"anoisesrc=color=pink:amplitude=0.10:sample_rate=48000:duration={duration}"
             filt = "lowpass=f=5200,highpass=f=180"
         elif name in ("wind", "forest"):
             source = f"anoisesrc=color=brown:amplitude=0.07:sample_rate=48000:duration={duration}"
