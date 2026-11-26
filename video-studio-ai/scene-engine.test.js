@@ -101,3 +101,49 @@ test("includes visual prompts, dialogue and contextual audio cues in every produ
   assert.equal(first.endSeconds - first.startSeconds, 15);
   assert.ok(plan.segments.every(segment => segment.visualPrompt && Array.isArray(segment.audioCues)));
 });
+
+
+test("recognizes every requested production location and keeps its ambience on shots", () => {
+  const examples = [
+    ["Zoológico", "ambiente_zoologico"],
+    ["Consultorio médico", "ambiente_consultorio"],
+    ["Mercado", "ambiente_mercado"],
+    ["Plaza comercial", "ambiente_plaza_comercial"],
+    ["Cafetería", "ambiente_cafeteria"],
+    ["Restaurante", "ambiente_restaurante"],
+    ["Autódromo y pista de carreras", "ambiente_autodromo"],
+    ["Calle y avenida", "ambiente_calle"]
+  ];
+  examples.forEach(([location, cue], index) => {
+    const result = engine.analyze([
+      `ESCENA ${index + 1} — ${location.toUpperCase()}`,
+      `TOMA ${index + 1}.1 — Actividad principal`,
+      "Una persona camina por el lugar y observa el entorno."
+    ].join("\\n"));
+    const plan = engine.buildProductionPlan(result, 15, 15);
+    assert.ok(result.scenes[0].types.length > 0, location + " debe clasificarse");
+    assert.ok(plan.segments[0].audioCues.includes(cue), location + " debe conservar su ambiente en la toma");
+  });
+});
+
+test("recognizes animal, medical, shopping, kitchen and transport sound actions", () => {
+  const result = engine.analyze([
+    "ESCENA 1 — ZOOLÓGICO",
+    "TOMA 1.1 — Los animales",
+    "Los leones rugen, los monos gritan y los pájaros cantan.",
+    "ESCENA 2 — CONSULTORIO",
+    "TOMA 2.1 — Monitor",
+    "El monitor cardíaco emite pitidos y suena una alarma.",
+    "ESCENA 3 — MERCADO",
+    "TOMA 3.1 — Cobro",
+    "La cajera escanea productos y mueve un carrito de compras.",
+    "ESCENA 4 — RESTAURANTE",
+    "TOMA 4.1 — Cocina",
+    "El chef fríe alimentos en una sartén y sirve platos.",
+    "ESCENA 5 — AEROPUERTO",
+    "TOMA 5.1 — Despegue",
+    "Un avión despega mientras un tren llega a la terminal."
+  ].join("\\n"));
+  const cues = result.scenes.flatMap(scene => engine.buildProductionPlan({scenes:[scene],globalInstructions:""},15,15).segments[0].audioCues);
+  ["animales","aves","equipo_medico","alarma","caja_registradora","carritos_compras","cocina","aeropuerto","tren_metro"].forEach(cue => assert.ok(cues.includes(cue), cue + " debe estar disponible"));
+});
