@@ -141,6 +141,19 @@
           else if(cue==="conversaciones_fondo")cueNoise(audioCtx,master,segmentStart,duration,.008,2100);
           else if(cue==="tazas_vasos"){for(let k=0;k<3;k++){const at=segmentStart+Math.min(duration-.2,.8+k*1.5);cueTone(audioCtx,master,at,1450+k*170,.12,.018,"sine");cueTone(audioCtx,master,at+.04,2100+k*90,.08,.012,"sine");}}
           else if(cue==="risas"){for(let k=0;k<2;k++){const at=segmentStart+Math.min(duration-.25,1.2+k*2.1);cueTone(audioCtx,master,at,520,.13,.009,"triangle");cueTone(audioCtx,master,at+.16,620,.12,.008,"triangle");}}
+          else if(/^ambiente_(zoologico|consultorio|mercado|plaza_comercial|restaurante|cafeteria|autodromo|calle)$/.test(cue)){
+            const profile={ambiente_zoologico:[4200,.014],ambiente_consultorio:[620,.006],ambiente_mercado:[1700,.014],ambiente_plaza_comercial:[2100,.012],ambiente_restaurante:[2400,.010],ambiente_cafeteria:[1500,.010],ambiente_autodromo:[950,.014],ambiente_calle:[650,.012]}[cue];
+            cueNoise(audioCtx,master,segmentStart,duration,profile[1],profile[0]);
+          }
+          else if(cue==="aves"||cue==="insectos"){cueNoise(audioCtx,master,segmentStart,duration,.010,4200);cueTone(audioCtx,master,segmentStart+.45,1850,.18,.006,"sine");}
+          else if(cue==="animales"||cue==="perros"||cue==="gatos"||cue==="caballos"){cueTone(audioCtx,master,segmentStart+.5,260,.22,.008,"triangle");}
+          else if(cue==="cocina"||cue==="tazas_vasos"){cueNoise(audioCtx,master,segmentStart,duration,.009,2600);}
+          else if(cue==="caja_registradora"){cueTone(audioCtx,master,segmentStart+.4,1450,.08,.012,"sine");cueTone(audioCtx,master,segmentStart+.58,1750,.08,.010,"sine");}
+          else if(cue==="carritos_compras"){cueNoise(audioCtx,master,segmentStart,duration,.008,3000);}
+          else if(cue==="equipo_medico"){cueTone(audioCtx,master,segmentStart+.5,880,.07,.006,"sine");cueTone(audioCtx,master,segmentStart+1.4,880,.07,.006,"sine");}
+          else if(cue==="alarma"){cueTone(audioCtx,master,segmentStart,880,.45,.012,"sine");}
+          else if(cue==="tren_metro"||cue==="aeropuerto"){cueNoise(audioCtx,master,segmentStart,duration,.014,1000);}
+          else if(cue==="agua"||cue==="fuego"){cueNoise(audioCtx,master,segmentStart,duration,.016,2200);}
         });
         if(video.src){await video.play();}
         const endAt=performance.now()+duration*1000;
