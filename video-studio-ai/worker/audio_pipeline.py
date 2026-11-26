@@ -173,6 +173,7 @@ def _ambience(text):
         "wind": ("viento", "ventoso", "ráfaga", "brisa", "wind"),
         "forest": ("bosque", "árboles", "selva", "pájaros", "birds"),
         "city": ("ciudad", "calle", "tráfico", "trafico", "avenida"),
+        "cafe": ("café", "cafe", "cafetería", "cafeteria", "terraza de café", "restaurante", "bar"),
         "workshop": ("taller", "mecánico", "mecanico", "herramientas", "garaje", "garage"),
         "race": ("carrera", "circuito", "pista", "motor", "automóvil", "automovil", "auto", "coche", "carro"),
         "indoor": ("habitación", "habitacion", "oficina", "cocina", "interior", "sala"),
@@ -210,6 +211,8 @@ def _effects(text):
         "water": ("salpica", "chapotea", "zambulle", "sumergirse", "salto al agua"),
         "applause": ("ovación", "ovacion", "aplaude", "aplausos"),
         "animal": ("ladrido", "ladra", "maullido", "relincho", "galope", "rugido"),
+        "cups": ("taza", "tazas", "vaso", "vasos", "copa", "copas", "brindis", "cubiertos"),
+        "laughter": ("risas", "riendo", "carcajada", "carcajadas"),
     }
     for name, words in rules.items():
         if any(word in t for word in words):
@@ -285,6 +288,9 @@ def _write_ambience(names, duration, target):
         elif name == "race":
             source = f"aevalsrc=0.045*sin(2*PI*(68+13*sin(2*PI*0.32*t))*t)+0.012*sin(2*PI*136*t):s=48000:d={duration}"
             filt = "lowpass=f=1200"
+        elif name == "cafe":
+            source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=280,lowpass=f=3200,bandpass=f=1250:w=2100,tremolo=f=0.22:d=0.18"
         elif name == "workshop":
             source = f"anoisesrc=color=pink:amplitude=0.045:sample_rate=48000:duration={duration}"
             filt = "highpass=f=500,lowpass=f=5000"
@@ -377,6 +383,12 @@ def _write_sfx(names, duration, target):
         elif name == "animal":
             src = f"aevalsrc=0.06*sin(2*PI*(220+55*sin(2*PI*1.2*t))*t):s=48000:d={duration}"
             filt = "lowpass=f=1600,volume=0.4"
+        elif name == "cups":
+            src = f"aevalsrc=0.12*exp(-18*abs(t-0.08))*sin(2*PI*1800*t)+0.08*exp(-24*abs(t-0.12))*sin(2*PI*2400*t):s=48000:d={duration}"
+            filt = "highpass=f=900,lowpass=f=6500,volume=0.55"
+        elif name == "laughter":
+            src = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=900:w=1500,tremolo=f=4:d=0.72,volume=0.28"
         else:
             continue
         inputs += ["-f", "lavfi", "-i", src]
@@ -415,7 +427,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         if not isinstance(item, dict):
             continue
         name = str(item.get("name") or "").strip().lower()
-        if name not in {"engine", "footsteps", "door", "impact", "tools", "crowd", "gunshot", "explosion", "glass", "phone", "alarm", "water", "applause", "animal"}:
+        if name not in {"engine", "footsteps", "door", "impact", "tools", "crowd", "gunshot", "explosion", "glass", "phone", "alarm", "water", "applause", "animal", "cups", "laughter"}:
             continue
         try:
             absolute_time = max(0.0, min(duration, float(item.get("time_seconds", 0))))
