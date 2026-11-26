@@ -11,14 +11,43 @@
     gain.gain.setValueAtTime(volume,when+duration*.7);gain.gain.linearRampToValueAtTime(.0001,when+duration);
     osc.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
-  function cueNoise(ctx,dest,when,duration,volume=.02,frequency=1000){
+  function cueNoise(ctx,dest,when,duration,volume=.004,frequency=1000){
     const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*duration),ctx.sampleRate),data=buffer.getChannelData(0);
-    for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.35;
     const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
     source.buffer=buffer;filter.type="lowpass";filter.frequency.value=frequency;
-    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+.08);
+    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+Math.min(.8,duration*.2));
     gain.gain.setValueAtTime(volume,when+duration*.7);gain.gain.linearRampToValueAtTime(.0001,when+duration);
     source.connect(filter);filter.connect(gain);gain.connect(dest);source.start(when);source.stop(when+duration);
+  }
+  function cueMurmur(ctx,dest,when,duration,volume=.0035){
+    [{f:125,formant:520},{f:168,formant:1050},{f:205,formant:1580}].forEach((v,i)=>{
+      const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
+      osc.type="sawtooth";osc.frequency.value=v.f+(Math.random()*10-5);
+      filter.type="bandpass";filter.frequency.value=v.formant;filter.Q.value=1.1;
+      gain.gain.value=volume*.4;lfo.frequency.value=.65+i*.21;depth.gain.value=volume*.4;
+      lfo.connect(depth);depth.connect(gain.gain);osc.connect(filter);filter.connect(gain);gain.connect(dest);
+      osc.start(when);lfo.start(when);osc.stop(when+duration);lfo.stop(when+duration);
+    });
+  }
+  function cueBirds(ctx,dest,when,duration){
+    for(let t=.3;t<duration;t+=1.5+Math.random()){
+      const at=when+t,osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.type="sine";osc.frequency.setValueAtTime(1850+Math.random()*400,at);
+      osc.frequency.exponentialRampToValueAtTime(2900+Math.random()*500,at+.13);
+      osc.frequency.exponentialRampToValueAtTime(1600,at+.29);
+      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.008,at+.04);gain.gain.exponentialRampToValueAtTime(.0001,at+.3);
+      osc.connect(gain);gain.connect(dest);osc.start(at);osc.stop(at+.31);
+    }
+  }
+  function cueEngine(ctx,dest,when,duration){
+    const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    osc.type="sawtooth";osc.frequency.setValueAtTime(62,when);osc.frequency.exponentialRampToValueAtTime(175,when+duration*.55);
+    osc.frequency.exponentialRampToValueAtTime(78,when+duration);
+    filter.type="lowpass";filter.frequency.value=520;
+    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(.026,when+.45);
+    gain.gain.setValueAtTime(.026,when+duration*.55);gain.gain.linearRampToValueAtTime(.0001,when+duration);
+    osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
   async function getDialogueBuffers(manifest,status){
     const lines=manifest.segments.flatMap(segment=>segment.dialogues.map((line,index)=>({segmentId:segment.id,line,index})));
@@ -72,9 +101,10 @@
     const dialogueBuffers=await getDialogueBuffers(manifest,status);
     const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     await audioCtx.resume();
-    const destination=audioCtx.createMediaStreamDestination(),master=audioCtx.createGain();
-    master.gain.value=1;master.connect(destination);
-    const music=audioCtx.createGain();music.gain.value=.12;music.connect(master);
+    const destination=audioCtx.createMediaStreamDestination(),master=audioCtx.createGain(),limiter=audioCtx.createDynamicsCompressor();
+    limiter.threshold.value=-18;limiter.knee.value=12;limiter.ratio.value=3.5;limiter.attack.value=.003;limiter.release.value=.2;
+    master.gain.value=.82;master.connect(limiter);limiter.connect(destination);
+    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.035:.06;music.connect(master);
     // A small harmonic bed is deliberately audible in the exported file.
     const musicOscillators=[];
     [110,164.81,220,261.63].forEach((frequency,index)=>{
@@ -123,7 +153,12 @@
         (segment.dialogues||[]).forEach((line,index)=>{
           const buffer=dialogueBuffers.get(segment.id+":"+index);if(!buffer)return;
           const voice=audioCtx.createBufferSource(),gain=audioCtx.createGain();
-          voice.buffer=buffer;gain.gain.value=1;voice.connect(gain);gain.connect(master);
+          voice.buffer=buffer;
+          const samples=buffer.getChannelData(0);let energy=0,stride=Math.max(1,Math.floor(samples.length/8000)),count=0;
+          for(let n=0;n<samples.length;n+=stride){energy+=samples[n]*samples[n];count++;}
+          const rms=Math.sqrt(energy/Math.max(1,count));
+          gain.gain.value=Math.min(4.5,Math.max(1.25,.19/Math.max(.001,rms)));
+          voice.connect(gain);gain.connect(master);
           const at=Number.isFinite(line.atSeconds)?line.atSeconds:Math.min(duration-.5,.6+(index*duration/Math.max(1,segment.dialogues.length)));
           voice.start(segmentStart+Math.max(0,Math.min(duration-.1,at)));
         });
@@ -136,11 +171,11 @@
           else if(cue==="puerta")cueTone(audioCtx,master,segmentStart+Math.min(1,duration*.2),180,.35,.04,"triangle");
           else if(cue==="impacto")cueNoise(audioCtx,master,segmentStart,.45,.04,500);
           else if(cue==="herramientas_taller")cueNoise(audioCtx,master,segmentStart,duration*.5,.024,3200);
-          else if(cue==="ambiente_cafeteria"){cueNoise(audioCtx,master,segmentStart,duration,.010,1500);cueNoise(audioCtx,master,segmentStart,duration,.006,520);}
-          else if(cue==="trafico_calle")cueNoise(audioCtx,master,segmentStart,duration,.012,620);
-          else if(cue==="conversaciones_fondo")cueNoise(audioCtx,master,segmentStart,duration,.008,2100);
-          else if(cue==="tazas_vasos"){for(let k=0;k<3;k++){const at=segmentStart+Math.min(duration-.2,.8+k*1.5);cueTone(audioCtx,master,at,1450+k*170,.12,.018,"sine");cueTone(audioCtx,master,at+.04,2100+k*90,.08,.012,"sine");}}
-          else if(cue==="risas"){for(let k=0;k<2;k++){const at=segmentStart+Math.min(duration-.25,1.2+k*2.1);cueTone(audioCtx,master,at,520,.13,.009,"triangle");cueTone(audioCtx,master,at+.16,620,.12,.008,"triangle");}}
+          else if(cue==="ambiente_cafeteria"){cueMurmur(audioCtx,master,segmentStart,duration,.004);for(let k=0;k<2;k++){const at=segmentStart+.7+k*1.8;cueTone(audioCtx,master,at,1480+k*120,.12,.012,"sine");}}
+          else if(cue==="trafico_calle"){for(let k=0;k<3;k++)cueEngine(audioCtx,master,segmentStart+k*3,duration*.45);}
+          else if(cue==="conversaciones_fondo")cueMurmur(audioCtx,master,segmentStart,duration,.0045);
+          else if(cue==="tazas_vasos"){for(let k=0;k<3;k++){const at=segmentStart+Math.min(duration-.2,.8+k*1.5);cueTone(audioCtx,master,at,1450+k*170,.12,.012,"sine");cueTone(audioCtx,master,at+.04,2100+k*90,.08,.007,"sine");}}
+          else if(cue==="risas"){cueTone(audioCtx,master,segmentStart+1.2,520,.18,.006,"triangle");cueTone(audioCtx,master,segmentStart+1.42,650,.18,.005,"triangle");}
           else if(/^ambiente_(zoologico|consultorio|mercado|plaza_comercial|restaurante|cafeteria|autodromo|calle|biblioteca|escuela|museo|hotel|iglesia|parque|piscina|autobus|construccion|teatro|gimnasio)$/.test(cue)){
             const profile={
               ambiente_zoologico:[4200,.014],ambiente_consultorio:[620,.006],ambiente_mercado:[1700,.014],
@@ -151,10 +186,14 @@
               ambiente_autobus:[850,.014],ambiente_construccion:[4200,.018],ambiente_teatro:[1200,.009],
               ambiente_gimnasio:[1800,.010]
             }[cue];
-            cueNoise(audioCtx,master,segmentStart,duration,profile[1],profile[0]);
+            if(cue==="ambiente_zoologico")cueBirds(audioCtx,master,segmentStart,duration);
+            else if(["ambiente_mercado","ambiente_plaza_comercial","ambiente_restaurante","ambiente_escuela","ambiente_hotel"].includes(cue))cueMurmur(audioCtx,master,segmentStart,duration,.004);
+            else if(cue==="ambiente_autodromo"||cue==="ambiente_autobus")cueEngine(audioCtx,master,segmentStart,duration);
+            else if(cue==="ambiente_calle")cueEngine(audioCtx,master,segmentStart,duration*.65);
+            else cueNoise(audioCtx,master,segmentStart,duration,Math.min(.004,profile[1]*.3),profile[0]);
           }
-          else if(cue==="aves"||cue==="insectos"){cueNoise(audioCtx,master,segmentStart,duration,.010,4200);cueTone(audioCtx,master,segmentStart+.45,1850,.18,.006,"sine");}
-          else if(cue==="animales"||cue==="perros"||cue==="gatos"||cue==="caballos"){cueTone(audioCtx,master,segmentStart+.5,260,.22,.008,"triangle");}
+          else if(cue==="aves"||cue==="insectos")cueBirds(audioCtx,master,segmentStart,duration);
+          else if(cue==="animales"||cue==="perros"||cue==="gatos"||cue==="caballos"){cueTone(audioCtx,master,segmentStart+.5,260,.22,.006,"triangle");}
           else if(cue==="cocina"||cue==="tazas_vasos"){cueNoise(audioCtx,master,segmentStart,duration,.009,2600);}
           else if(cue==="caja_registradora"){cueTone(audioCtx,master,segmentStart+.4,1450,.08,.012,"sine");cueTone(audioCtx,master,segmentStart+.58,1750,.08,.010,"sine");}
           else if(cue==="carritos_compras"){cueNoise(audioCtx,master,segmentStart,duration,.008,3000);}
