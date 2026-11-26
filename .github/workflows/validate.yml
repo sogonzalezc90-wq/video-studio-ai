@@ -35,7 +35,11 @@ jobs:
       - name: Run JavaScript contract tests
         run: npm test
         working-directory: video-studio-ai
-      - name: Compile Kaggle worker and audio pipeline
+      - name: Install FFmpeg for real audio render tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Compile and test Kaggle worker audio pipeline
         run: |
           python -m py_compile video-studio-ai/worker/kaggle_supabase_worker.py
           python -m py_compile video-studio-ai/worker/audio_pipeline.py
