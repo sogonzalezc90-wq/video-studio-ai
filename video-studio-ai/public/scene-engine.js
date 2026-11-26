@@ -193,9 +193,64 @@
     g.gain.setValueAtTime(vol,when+Math.max(.26,dur-.3));g.gain.linearRampToValueAtTime(.0001,when+dur);
     src.connect(f);f.connect(g);g.connect(dest);src.start(when);src.stop(when+dur);
   }
+  function addMurmur(ctx,dest,when,duration,volume=.004){
+    // A soft, speech-shaped crowd bed: harmonic formants with slow syllabic movement,
+    // rather than broadband white noise that sounds like radio static.
+    const voices=[{base:118,formant:520},{base:164,formant:980},{base:205,formant:1480}];
+    voices.forEach((v,index)=>{
+      const osc=ctx.createOscillator(),formant=ctx.createBiquadFilter(),gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
+      osc.type="sawtooth";osc.frequency.value=v.base+(Math.random()*14-7);
+      formant.type="bandpass";formant.frequency.value=v.formant;formant.Q.value=1.2;
+      lfo.type="sine";lfo.frequency.value=.7+index*.23;depth.gain.value=volume*.48;
+      gain.gain.value=volume*.42;
+      lfo.connect(depth);depth.connect(gain.gain);osc.connect(formant);formant.connect(gain);gain.connect(dest);
+      osc.start(when);lfo.start(when);osc.stop(when+duration);lfo.stop(when+duration);
+    });
+  }
+  function addBirdChirps(ctx,dest,when,duration){
+    for(let t=.25;t<duration;t+=1.35+Math.random()*.8){
+      const at=when+t,osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.type="sine";osc.frequency.setValueAtTime(1900+Math.random()*500,at);
+      osc.frequency.exponentialRampToValueAtTime(2700+Math.random()*700,at+.12);
+      osc.frequency.exponentialRampToValueAtTime(1500+Math.random()*400,at+.28);
+      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.009,at+.04);
+      gain.gain.exponentialRampToValueAtTime(.0001,at+.3);
+      osc.connect(gain);gain.connect(dest);osc.start(at);osc.stop(at+.32);
+    }
+  }
+  function addEngineRev(ctx,dest,when,duration,volume=.025){
+    const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    osc.type="sawtooth";osc.frequency.setValueAtTime(65,when);
+    osc.frequency.exponentialRampToValueAtTime(190,when+duration*.55);
+    osc.frequency.exponentialRampToValueAtTime(82,when+duration);
+    filter.type="lowpass";filter.frequency.value=520;
+    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+.4);
+    gain.gain.setValueAtTime(volume,when+duration*.55);gain.gain.linearRampToValueAtTime(.0001,when+duration);
+    osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
+  }
+  function addPassingTraffic(ctx,dest,when,duration){
+    for(let t=.5;t<duration;t+=3.2){
+      const at=when+t,osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+      osc.type="sawtooth";osc.frequency.setValueAtTime(95,at);osc.frequency.exponentialRampToValueAtTime(48,at+1.8);
+      filter.type="lowpass";filter.frequency.value=420;
+      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.018,at+.7);
+      gain.gain.linearRampToValueAtTime(.0001,at+2.2);
+      osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(at);osc.stop(at+2.25);
+    }
+  }
+  function addGlassClinks(ctx,dest,when,count=3){
+    for(let k=0;k<count;k++){
+      const at=when+.65+k*1.45,frequency=1450+Math.random()*500;
+      tone(ctx,dest,at,frequency,.13,"sine",.012,frequency*.72);
+      tone(ctx,dest,at+.025,frequency*1.48,.09,"sine",.006,frequency*1.2);
+    }
+  }
   function buildAudio(ctx,destination,duration,analysis){
-    const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain();
-    master.gain.value=.7;music.gain.value=.1;music.connect(master);master.connect(destination);
+    const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
+    compressor.threshold.value=-20;compressor.knee.value=18;compressor.ratio.value=3.2;
+    compressor.attack.value=.004;compressor.release.value=.22;
+    master.gain.value=.78;music.gain.value=analysis.hasDialogue?.035:.065;
+    music.connect(master);master.connect(compressor);compressor.connect(destination);
     const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
     const notes=mood==="suspenso"?[55,65.41,82.41]:mood==="accion"?[73.42,110,146.83]:[65.41,98,130.81];
     const oscillators=[];
@@ -205,23 +260,22 @@
       const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
       if(s.types.includes("car")){tone(ctx,master,when,58,len,"sawtooth",.075,135);tone(ctx,master,when+.3,950,.18,"sine",.025,400);}
       if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
-      if(s.types.includes("rain"))noise(ctx,master,when,len,.035,"highpass",1100);
-      if(s.types.includes("wind"))noise(ctx,master,when,len,.022,"lowpass",380);
+      if(s.types.includes("rain"))noise(ctx,master,when,len,.012,"lowpass",1500);
+      if(s.types.includes("wind"))noise(ctx,master,when,len,.008,"lowpass",300);
       if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,72+(k%2)*16,.12,"triangle",.025,38);
       if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
       if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
-      if(s.types.includes("cafe")){noise(ctx,master,when,len,.010,"bandpass",1250);noise(ctx,master,when,len,.006,"lowpass",420);}
-      if(s.types.includes("traffic"))noise(ctx,master,when,len,.012,"lowpass",520);
-      if(s.types.includes("chatter"))noise(ctx,master,when,len,.008,"bandpass",1850);
-      if(s.types.includes("cups"))for(let k=0;k<3;k++){const at=when+Math.min(len-.2,.7+k*1.35);tone(ctx,master,at,1450+k*170,.12,"sine",.018,900);tone(ctx,master,at+.035,2100+k*90,.08,"sine",.012,1300);}
-      if(s.types.includes("laughter"))for(let k=0;k<2;k++){const at=when+Math.min(len-.25,1.1+k*2.1);tone(ctx,master,at,520,.13,"triangle",.009,680);tone(ctx,master,at+.16,620,.12,"triangle",.008,760);}
-      if(s.types.includes("zoo")||s.types.includes("birds")){noise(ctx,master,when,len,.012,"highpass",4200);tone(ctx,master,when+.4,1850,.18,"sine",.006,2350);}
-      if(s.types.includes("clinic")||s.types.includes("medical")){noise(ctx,master,when,len,.006,"lowpass",650);for(let k=0;k<2;k++)tone(ctx,master,when+1.2+k*2.2,880,.07,"sine",.004,880);}
-      if(s.types.includes("market")||s.types.includes("mall")||s.types.includes("crowd")){noise(ctx,master,when,len,.012,"bandpass",1600);noise(ctx,master,when,len,.006,"lowpass",480);}
-      if(s.types.includes("restaurant")||s.types.includes("kitchen")){noise(ctx,master,when,len,.009,"bandpass",2400);for(let k=0;k<3;k++)tone(ctx,master,when+.6+k*1.2,1750,.08,"sine",.009,1150);}
-      if(s.types.includes("racetrack")){tone(ctx,master,when,72,len,"sawtooth",.06,165);noise(ctx,master,when,len,.009,"lowpass",900);}
-      if(s.types.includes("street")){noise(ctx,master,when,len,.012,"lowpass",650);for(let k=0;k<2;k++)tone(ctx,master,when+1.1+k*2.4,520,.09,"square",.004,420);}
+      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.004);addGlassClinks(ctx,master,when,2);}
+      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.0045);
+      if(s.types.includes("cups"))addGlassClinks(ctx,master,when,3);
+      if(s.types.includes("laughter")){tone(ctx,master,when+1.1,520,.22,"triangle",.006,690);tone(ctx,master,when+1.38,650,.2,"triangle",.005,790);}
+      if(s.types.includes("zoo")||s.types.includes("birds"))addBirdChirps(ctx,master,when,len);
+      if(s.types.includes("clinic")||s.types.includes("medical")){tone(ctx,master,when+1.2,880,.08,"sine",.006,880);tone(ctx,master,when+3.1,880,.08,"sine",.006,880);}
+      if(s.types.includes("market")||s.types.includes("mall"))addMurmur(ctx,master,when,len,.005);
+      if(s.types.includes("restaurant")||s.types.includes("kitchen")){addMurmur(ctx,master,when,len,.0035);addGlassClinks(ctx,master,when,3);}
+      if(s.types.includes("racetrack")){addEngineRev(ctx,master,when,len,.032);addMurmur(ctx,master,when,len,.0025);}
+      if(s.types.includes("street"))addPassingTraffic(ctx,master,when,len);
       if(s.types.includes("cash"))for(let k=0;k<2;k++)tone(ctx,master,when+.7+k*1.3,1450,.08,"sine",.012,1450);
       if(s.types.includes("shopping"))noise(ctx,master,when,len,.008,"bandpass",2800);
       if(s.types.includes("train")||s.types.includes("airport"))noise(ctx,master,when,len,.014,"lowpass",1000);
@@ -231,7 +285,7 @@
       if(s.dialogues.length){music.gain.setValueAtTime(.035,when);music.gain.setValueAtTime(.1,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
       if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
-    return ()=>{oscillators.forEach(o=>{try{o.stop();}catch(_){}});try{master.disconnect();music.disconnect();}catch(_){}};
+    return ()=>{oscillators.forEach(o=>{try{o.stop();}catch(_){}});try{master.disconnect();music.disconnect();compressor.disconnect();}catch(_){}};
   }
 
   function audioCuesFor(scene,shot) {
