@@ -10,7 +10,12 @@
     {type:"workshop",label:"Taller / herramientas",re:/\b(taller|reparando|reparar|herramientas|llave|soldar|mec[aá]nic)\b/i},
     {type:"door",label:"Puerta / interior",re:/\b(puerta|abre|abri[oó]|cerr[oó]|habitaci[oó]n|cuarto|casa|oficina)\b/i},
     {type:"impact",label:"Golpe / acción",re:/\b(golpe|disparo|explosi[oó]n|cae|rompe|choque|pelea|frenada)\b/i},
-    {type:"night",label:"Noche / suspenso",re:/\b(noche|oscuro|sombra|misterio|miedo|suspenso|silencio|terror)\b/i}
+    {type:"night",label:"Noche / suspenso",re:/\b(noche|oscuro|sombra|misterio|miedo|suspenso|silencio|terror)\b/i},
+    {type:"cafe",label:"Cafetería / restaurante",re:/\b(caf[eé]|cafeter[ií]a|restaurante|terraza|bar|mesas|comedor)\b/i},
+    {type:"traffic",label:"Tráfico / calle",re:/\b(tr[aá]fico|calle|avenida|bocina|claxon|coches pasando|veh[ií]culos pasando)\b/i},
+    {type:"cups",label:"Tazas / vasos",re:/\b(taza|tazas|vaso|vasos|copa|copas|cubiertos|brindis)\b/i},
+    {type:"laughter",label:"Risas / carcajadas",re:/\b(risa|risas|riendo|r[ií]e|carcajada|carcajadas)\b/i},
+    {type:"chatter",label:"Conversaciones de fondo",re:/\b(conversaci[oó]n|conversan|charlan|murmullos|voces lejanas|gente hablando|bullicio)\b/i}
   ];
 
   const DIALOGUE = /^\s*([\p{L}][\p{L}\p{M} .'-]{0,35})\s*:\s*(.+)$/u;
@@ -79,7 +84,13 @@
         if(heading && !/^(EL|LA|LOS|LAS|UN|UNA|DURACIÓN|FORMATO|RESOLUCIÓN)\b/.test(heading[1])) {
           if(i===0 || /^(EL|LA|LOS|LAS)\s/.test(heading[1])) {makeScene(heading[1],scenes.length+1);seenScene=true;continue;}
         }
-        globalInstructions.push(line);continue;
+        if(!/^(?:duraci[oó]n total|formato|resoluci[oó]n|relaci[oó]n de aspecto)\s*:/i.test(trim)) {
+          makeScene("Escena 1",1);
+          seenScene=true;
+        } else {
+          globalInstructions.push(line);
+          continue;
+        }
       }
       const d=secondsFrom(trim);
       if(d!==null){if(shot)shot.duration=d;else if(scene&&!/duraci[oó]n\s+total/i.test(trim))scene.duration=d;continue;}
@@ -162,6 +173,11 @@
       if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
       if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
+      if(s.types.includes("cafe")){noise(ctx,master,when,len,.010,"bandpass",1250);noise(ctx,master,when,len,.006,"lowpass",420);}
+      if(s.types.includes("traffic"))noise(ctx,master,when,len,.012,"lowpass",520);
+      if(s.types.includes("chatter"))noise(ctx,master,when,len,.008,"bandpass",1850);
+      if(s.types.includes("cups"))for(let k=0;k<3;k++){const at=when+Math.min(len-.2,.7+k*1.35);tone(ctx,master,at,1450+k*170,.12,"sine",.018,900);tone(ctx,master,at+.035,2100+k*90,.08,"sine",.012,1300);}
+      if(s.types.includes("laughter"))for(let k=0;k<2;k++){const at=when+Math.min(len-.25,1.1+k*2.1);tone(ctx,master,at,520,.13,"triangle",.009,680);tone(ctx,master,at+.16,620,.12,"triangle",.008,760);}
       if(s.dialogues.length){music.gain.setValueAtTime(.035,when);music.gain.setValueAtTime(.1,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
       if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
@@ -180,7 +196,9 @@
       workshop:"herramientas_taller",
       door:"puerta",
       impact:"impacto",
-      night:"ambiente_suspenso"
+      night:"ambiente_suspenso",
+      cafe:"ambiente_cafeteria",traffic:"trafico_calle",cups:"tazas_vasos",
+      laughter:"risas",chatter:"conversaciones_fondo"
     };
     return [...types].map(type=>cueMap[type]).filter(Boolean);
   }
@@ -245,7 +263,11 @@
           sceneRange.shotRanges.length===1?(sceneRange.scene.dialogues||[]):[]);
         const dialogueCenter=(shotRange.start+shotRange.end)/2;
         if(dialogueCenter>=startSeconds&&dialogueCenter<endSeconds)
-          shotDialogues.forEach(line=>dialogues.push({character:line.character,text:line.text,atSeconds:Math.max(0,dialogueCenter-startSeconds)}));
+          shotDialogues.forEach((line,lineIndex)=>{
+            const slot=shotRange.end-shotRange.start;
+            const lineTime=shotRange.start+slot*((lineIndex+0.5)/Math.max(1,shotDialogues.length));
+            dialogues.push({character:line.character,text:line.text,atSeconds:Math.max(0,lineTime-startSeconds)});
+          });
       });
       const audioCues=[...new Set(overlappingShots.flatMap(({sceneRange,shotRange})=>
         audioCuesFor(sceneRange.scene,{title:shotRange.shot.title||"Toma",description:shotRange.shot.description||sceneRange.scene.description||""})
