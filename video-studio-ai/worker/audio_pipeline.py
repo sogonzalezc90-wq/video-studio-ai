@@ -169,20 +169,25 @@ def _ambience(text):
     t = text.lower()
     found = []
     rules = {
-        "rain": ("lluvia", "llueve", "tormenta", "charcos", "rain"),
-        "wind": ("viento", "ventoso", "ráfaga", "brisa", "wind"),
-        "forest": ("bosque", "árboles", "selva", "pájaros", "birds"),
-        "city": ("ciudad", "calle", "tráfico", "trafico", "avenida"),
-        "cafe": ("café", "cafe", "cafetería", "cafeteria", "terraza de café", "restaurante", "bar"),
+        "zoo": ("zoológico", "zoologico", "zoo", "safari", "aviario", "recinto animal", "fauna silvestre", "jaula"),
+        "clinic": ("consultorio", "clínica", "clinica", "hospital", "urgencias", "enfermería", "enfermeria", "sala de espera", "quirófano", "quirofano"),
+        "market": ("mercado", "tianguis", "puesto", "vendedor", "vendedora", "central de abasto", "pasillo de mercado"),
+        "mall": ("plaza comercial", "centro comercial", "mall", "tienda departamental", "patio de comidas", "escaleras eléctricas", "escaleras electricas"),
+        "restaurant": ("restaurante", "comensales", "mesero", "mesera", "chef", "comedor"),
+        "cafe": ("café", "cafe", "cafetería", "cafeteria", "terraza de café", "barista", "máquina de espresso", "maquina de espresso"),
+        "race": ("autódromo", "autodromo", "carrera", "circuito", "pista de carreras", "boxes", "parrilla de salida", "pit lane", "motor", "automóvil", "automovil", "auto", "coche", "carro"),
+        "city": ("ciudad", "calle", "tráfico", "trafico", "avenida", "boulevard", "semáforo", "semaforo", "cruce peatonal"),
+        "kitchen": ("cocina", "cocinero", "cocinera", "freír", "freir", "sartén", "sarten", "hervir", "horno", "parrilla"),
+        "forest": ("bosque", "árboles", "arboles", "selva", "pájaros", "pajaros", "birds"),
         "workshop": ("taller", "mecánico", "mecanico", "herramientas", "garaje", "garage"),
-        "race": ("carrera", "circuito", "pista", "motor", "automóvil", "automovil", "auto", "coche", "carro"),
-        "indoor": ("habitación", "habitacion", "oficina", "cocina", "interior", "sala"),
+        "indoor": ("habitación", "habitacion", "oficina", "interior", "sala", "consultorio"),
         "night": ("noche", "madrugada", "medianoche"),
         "ocean": ("mar", "océano", "oceano", "olas", "playa", "costa", "marea"),
         "river": ("río", "rio", "arroyo", "cascada", "catarata", "corriente de agua"),
         "fire": ("fuego", "fogata", "hoguera", "chimenea", "incendio", "llamas"),
-        "stadium": ("estadio", "gradas", "afición", "aficion", "partido", "cancha"),
+        "stadium": ("estadio", "gradas", "afición", "aficion", "partido", "cancha", "público", "publico"),
         "subway": ("metro", "estación", "estacion", "tren", "andén", "anden", "ferrocarril"),
+        "airport": ("aeropuerto", "avión", "avion", "terminal aérea", "terminal aerea", "despegue", "aterrizaje"),
         "office": ("oficina", "computadora", "teclado", "reunión", "reunion"),
         "farm": ("granja", "rancho", "corral", "caballos", "vacas", "gallinas"),
         "space": ("espacio exterior", "nave espacial", "estación espacial", "estacion espacial", "planeta"),
@@ -202,7 +207,7 @@ def _effects(text):
         "door": ("abre la puerta", "cierra la puerta", "portazo", "puerta se abre", "puerta se cierra", "se cierra una puerta"),
         "impact": ("golpe", "choque", "impacto", "cae al suelo", "explosión", "explosion"),
         "tools": ("soldar", "llave inglesa", "martillo", "herramienta", "repara el motor"),
-        "crowd": ("público", "publico", "multitud", "aplausos", "gradas", "estadio lleno"),
+        "crowd": ("público", "publico", "multitud", "aplausos", "gradas", "estadio lleno", "clientes", "compradores"),
         "gunshot": ("disparo", "disparos", "pistola", "rifle", "arma de fuego"),
         "explosion": ("explosión", "explosion", "detonación", "detonacion", "estalla"),
         "glass": ("cristal", "vidrio", "ventana rota", "rompe el vaso"),
@@ -210,9 +215,21 @@ def _effects(text):
         "alarm": ("alarma", "sirena", "alerta", "evacuación", "evacuacion"),
         "water": ("salpica", "chapotea", "zambulle", "sumergirse", "salto al agua"),
         "applause": ("ovación", "ovacion", "aplaude", "aplausos"),
-        "animal": ("ladrido", "ladra", "maullido", "relincho", "galope", "rugido"),
-        "cups": ("taza", "tazas", "vaso", "vasos", "copa", "copas", "brindis", "cubiertos"),
+        "animal": ("rugido", "león", "leon", "tigre", "elefante", "mono", "monos", "jirafa", "cebra", "oso", "lobo", "foca", "delfín", "delfin"),
+        "birds": ("ave", "aves", "pájaro", "pajaro", "pájaros", "pajaros", "loro", "guacamaya", "flamenco", "pingüino", "pinguino", "gaviota"),
+        "dog": ("perro", "perros", "ladrido", "ladra", "ladran"),
+        "cat": ("gato", "gata", "gatito", "maullido", "maúlla", "maulla"),
+        "horse": ("caballo", "caballos", "relincho", "relincha", "galope", "galopa"),
+        "cups": ("taza", "tazas", "vaso", "vasos", "copa", "copas", "brindis", "cubiertos", "platos", "loza"),
         "laughter": ("risas", "riendo", "carcajada", "carcajadas"),
+        "cash_register": ("caja registradora", "cobrar", "cobro", "terminal bancaria", "escáner", "escaner", "código de barras", "codigo de barras"),
+        "shopping_cart": ("carrito", "carritos", "carro de compras", "canasta", "supermercado", "autoservicio"),
+        "medical_beep": ("monitor cardíaco", "monitor cardiaco", "monitor médico", "monitor medico", "electrocardiograma", "signos vitales"),
+        "train": ("tren", "metro", "vagón", "vagon", "andén", "anden"),
+        "aircraft": ("avión", "avion", "aeronave", "despegue", "aterrizaje", "helicóptero", "helicoptero"),
+        "cooking": ("freír", "freir", "sartén", "sarten", "hervir", "cocinar", "cocinando", "parrilla", "horno"),
+        "insects": ("grillos", "cigarras", "chicharras", "insectos"),
+        "fire": ("fuego", "fogata", "chimenea", "llamas", "incendio"),
     }
     for name, words in rules.items():
         if any(word in t for word in words):
@@ -288,9 +305,33 @@ def _write_ambience(names, duration, target):
         elif name == "race":
             source = f"aevalsrc=0.045*sin(2*PI*(68+13*sin(2*PI*0.32*t))*t)+0.012*sin(2*PI*136*t):s=48000:d={duration}"
             filt = "lowpass=f=1200"
+        elif name == "city":
+            source = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=1800,highpass=f=90,tremolo=f=0.16:d=0.35"
+        elif name == "airport":
+            source = f"anoisesrc=color=brown:amplitude=0.055:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=850,highpass=f=70,tremolo=f=0.12:d=0.45"
         elif name == "cafe":
             source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
             filt = "highpass=f=280,lowpass=f=3200,bandpass=f=1250:w=2100,tremolo=f=0.22:d=0.18"
+        elif name == "zoo":
+            source = f"anoisesrc=color=pink:amplitude=0.045:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=450,lowpass=f=4200,bandpass=f=1500:w=2600,tremolo=f=0.7:d=0.2"
+        elif name == "clinic":
+            source = f"anoisesrc=color=pink:amplitude=0.012:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=950,highpass=f=180"
+        elif name == "market":
+            source = f"anoisesrc=color=pink:amplitude=0.05:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=1300:w=2400,tremolo=f=0.8:d=0.22"
+        elif name == "mall":
+            source = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=1000:w=1800,lowpass=f=3200"
+        elif name == "restaurant":
+            source = f"anoisesrc=color=pink:amplitude=0.03:sample_rate=48000:duration={duration}"
+            filt = "bandpass=f=1600:w=2200,tremolo=f=0.3:d=0.12"
+        elif name == "kitchen":
+            source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=700,lowpass=f=5200,tremolo=f=2.5:d=0.3"
         elif name == "workshop":
             source = f"anoisesrc=color=pink:amplitude=0.045:sample_rate=48000:duration={duration}"
             filt = "highpass=f=500,lowpass=f=5000"
@@ -389,6 +430,34 @@ def _write_sfx(names, duration, target):
         elif name == "laughter":
             src = f"anoisesrc=color=pink:amplitude=0.035:sample_rate=48000:duration={duration}"
             filt = "bandpass=f=900:w=1500,tremolo=f=4:d=0.72,volume=0.28"
+        elif name in ("birds", "animal", "dog", "cat", "horse"):
+            base = {"birds": 1900, "animal": 260, "dog": 420, "cat": 720, "horse": 180}[name]
+            src = f"aevalsrc=0.07*sin(2*PI*({base}+65*sin(2*PI*1.3*t))*t)*abs(sin(2*PI*2.1*t)):s=48000:d={duration}"
+            filt = "lowpass=f=5200,volume=0.38"
+        elif name == "cash_register":
+            src = f"aevalsrc=0.12*exp(-24*abs(t-0.12))*sin(2*PI*1550*t)+0.08*exp(-28*abs(t-0.2))*sin(2*PI*2100*t):s=48000:d={duration}"
+            filt = "highpass=f=700,lowpass=f=6000,volume=0.5"
+        elif name == "shopping_cart":
+            src = f"anoisesrc=color=white:amplitude=0.035:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=1800,lowpass=f=7200,tremolo=f=5:d=0.55,volume=0.35"
+        elif name == "medical_beep":
+            src = f"aevalsrc=0.055*sin(2*PI*880*t)*lt(mod(t\\,1.25)\\,0.09):s=48000:d={duration}"
+            filt = "volume=0.55"
+        elif name == "train":
+            src = f"anoisesrc=color=brown:amplitude=0.08:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=950,highpass=f=45,tremolo=f=0.65:d=0.45,volume=0.5"
+        elif name == "aircraft":
+            src = f"anoisesrc=color=brown:amplitude=0.09:sample_rate=48000:duration={duration}"
+            filt = "lowpass=f=600,highpass=f=35,tremolo=f=0.1:d=0.7,volume=0.5"
+        elif name == "cooking":
+            src = f"anoisesrc=color=pink:amplitude=0.06:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=700,lowpass=f=5200,tremolo=f=7:d=0.6,volume=0.45"
+        elif name == "insects":
+            src = f"aevalsrc=0.025*sin(2*PI*(4300+120*sin(2*PI*5*t))*t):s=48000:d={duration}"
+            filt = "highpass=f=2800,lowpass=f=9000,volume=0.35"
+        elif name == "fire":
+            src = f"anoisesrc=color=brown:amplitude=0.06:sample_rate=48000:duration={duration}"
+            filt = "highpass=f=450,lowpass=f=5000,tremolo=f=4:d=0.7,volume=0.4"
         else:
             continue
         inputs += ["-f", "lavfi", "-i", src]
@@ -427,7 +496,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         if not isinstance(item, dict):
             continue
         name = str(item.get("name") or "").strip().lower()
-        if name not in {"engine", "footsteps", "door", "impact", "tools", "crowd", "gunshot", "explosion", "glass", "phone", "alarm", "water", "applause", "animal", "cups", "laughter"}:
+        if name not in {"engine", "footsteps", "door", "impact", "tools", "crowd", "gunshot", "explosion", "glass", "phone", "alarm", "water", "applause", "animal", "birds", "dog", "cat", "horse", "cups", "laughter", "cash_register", "shopping_cart", "medical_beep", "train", "aircraft", "cooking", "insects", "fire"}:
             continue
         try:
             absolute_time = max(0.0, min(duration, float(item.get("time_seconds", 0))))
