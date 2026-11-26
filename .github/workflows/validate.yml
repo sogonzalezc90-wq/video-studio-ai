@@ -39,6 +39,7 @@ jobs:
         run: |
           python -m py_compile video-studio-ai/worker/kaggle_supabase_worker.py
           python -m py_compile video-studio-ai/worker/audio_pipeline.py
+          python -m unittest discover -s video-studio-ai/worker -p "test_*.py" -v
       - name: Validate Kaggle notebooks
         run: |
           python -m json.tool video-studio-ai/notebooks/wan22_kaggle_free.ipynb > /dev/null
