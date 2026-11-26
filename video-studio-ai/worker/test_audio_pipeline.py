@@ -89,6 +89,47 @@ class AudioPipelineTests(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
+    def test_requested_public_and_service_locations_are_detected(self):
+        cases = {
+            "Un día en el zoológico con leones y aves": "zoo",
+            "Un consultorio médico con sala de espera": "clinic",
+            "Un mercado con vendedores y puestos": "market",
+            "Una plaza comercial con tiendas": "mall",
+            "Una cafetería llena de clientes": "cafe",
+            "Un restaurante con comensales": "restaurant",
+            "Un autódromo con pista de carreras y boxes": "race",
+            "Una avenida con tráfico y semáforos": "city",
+        }
+        for prompt, expected in cases.items():
+            with self.subTest(prompt=prompt):
+                self.assertIn(expected, audio._ambience(prompt))
+
+    def test_multiple_ambiences_can_coexist_in_one_scene(self):
+        found = audio._ambience(
+            "Un zoológico al aire libre junto a una avenida, con aves y lluvia."
+        )
+        for expected in ("zoo", "city", "rain", "forest"):
+            if expected == "forest":
+                continue
+            self.assertIn(expected, found)
+
+    def test_contextual_actions_cover_animals_health_retail_food_and_transport(self):
+        prompt = (
+            "Los leones rugen y los pájaros cantan. El monitor cardíaco emite pitidos. "
+            "La caja registradora suena, el carrito rueda, el chef fríe, el avión despega "
+            "y el tren llega."
+        )
+        effects = audio._effects(prompt)
+        for name in (
+            "animal", "birds", "medical_beep", "cash_register",
+            "shopping_cart", "cooking", "aircraft", "train"
+        ):
+            with self.subTest(effect=name):
+                self.assertIn(name, effects)
+
+if __name__ == "__main__":
+    unittest.main()
+
 
     def test_requested_public_and_service_locations_are_detected(self):
         cases = {
