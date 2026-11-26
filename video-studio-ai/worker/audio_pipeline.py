@@ -250,6 +250,7 @@ def _effects(text):
         "construction": ("taladro", "excavadora", "martillo neumático", "martillo neumatico", "obra", "demolición", "demolicion"),
         "gym": ("pesas", "mancuernas", "barra de pesas", "máquina de gimnasio", "maquina de gimnasio"),
         "church_bell": ("campanas de iglesia", "campanadas", "campana de iglesia", "campanario"),
+        "elevator": ("elevador", "ascensor", "puertas del elevador"),
     }
     for name, words in rules.items():
         if any(word in t for word in words):
