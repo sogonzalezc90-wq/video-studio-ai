@@ -71,55 +71,41 @@
 
   async function loadDialogueVoices(context,destination,analysis,duration){
     const scenes=Array.isArray(analysis?.scenes)?analysis.scenes:[];
-    const dialogueRows=scenes.flatMap((scene,sceneIndex)=>
-      (scene.dialogues||[]).map((dialogue,dialogueIndex)=>({
-        sceneIndex,dialogueIndex,sceneDialogueCount:scene.dialogues.length,
-        character:dialogue.character,text:String(dialogue.text||"").trim()
-      })).filter(item=>item.text)
-    );
-    if(!dialogueRows.length) return ()=>{};
-    const totalCharacters=dialogueRows.reduce((sum,item)=>sum+item.text.length,0);
-    if(dialogueRows.length>20||totalCharacters>2000)
-      throw new Error("El clip contiene demasiados diálogos para una sola generación gratuita. Reduce el guion a un máximo de 20 intervenciones y 2,000 caracteres para esta prueba.");
+    const dialogueRows=scenes.flatMap(scene=>(scene.dialogues||[])
+      .map(dialogue=>({character:dialogue.character,text:String(dialogue.text||"").trim()}))
+      .filter(item=>item.text));
+    if(!dialogueRows.length)return ()=>{};
+    const script=dialogueRows.map(item=>item.text).join(" … ");
+    if(dialogueRows.length>20||script.length>1200)
+      throw new Error("El diálogo supera el límite gratuito de esta prueba (20 intervenciones y 1,200 caracteres). Divide el guion en clips más cortos.");
     if(typeof window.VSAGetSessionToken!=="function")
       throw new Error("No se pudo validar la sesión para generar las voces.");
     const token=await window.VSAGetSessionToken();
-    const buffers=[];
-    for(let index=0;index<dialogueRows.length;index++){
-      const item=dialogueRows[index];
-      const speaker=window.VSAActiveManifest?.characters?.find(character=>character.name===item.character)?.voice||$("video-voice")?.value||"alvaro";
-      setMessage("Generando voz en español: "+(index+1)+" de "+dialogueRows.length+"...");
-      const response=await fetch("/api/jobs",{
-        method:"POST",
-        headers:{"content-type":"application/json","authorization":"Bearer "+token},
-        body:JSON.stringify({action:"generate_speech",text:item.text,speaker})
-      });
-      if(!response.ok){
-        let detail={};
-        try{detail=await response.json();}catch(_){}
-        throw new Error(detail.message||(response.status===429
-          ?"Se alcanzó la cuota gratuita diaria de voz. No se realizó ningún cargo."
-          :"No se pudo generar la voz en español."));
-      }
-      const bytes=await response.arrayBuffer();
-      if(!bytes.byteLength) throw new Error("El motor de voz devolvió un archivo vacío.");
-      const decoded=await context.decodeAudioData(bytes.slice(0));
-      buffers.push({item,buffer:decoded});
-    }
-    const sources=[];
-    const start=context.currentTime+.45;
-    const sceneSpan=duration/Math.max(1,scenes.length);
-    buffers.forEach(({item,buffer})=>{
-      const source=context.createBufferSource();
-      source.buffer=buffer;
-      source.connect(destination);
-      const offset=(item.dialogueIndex+.5)*sceneSpan/(item.sceneDialogueCount+1);
-      source.start(start+item.sceneIndex*sceneSpan+offset);
-      sources.push(source);
+    const speaker=$("video-voice")?.value||"alvaro";
+    setMessage("Generando diálogo completo en español: "+dialogueRows.length+" intervenciones en una sola pista de voz…");
+    const response=await fetch("/api/jobs",{
+      method:"POST",
+      headers:{"content-type":"application/json","authorization":"Bearer "+token},
+      body:JSON.stringify({action:"generate_speech",text:script,speaker})
     });
-    return ()=>{
-      sources.forEach(source=>{try{source.stop();}catch(_){}try{source.disconnect();}catch(_){}});
-    };
+    if(!response.ok){
+      let detail={};
+      try{detail=await response.json();}catch(_){}
+      throw new Error(detail.message||(response.status===429
+        ?"Se alcanzó la cuota gratuita diaria de voz. No se realizó ningún cargo."
+        :"No se pudo generar la voz en español."));
+    }
+    const bytes=await response.arrayBuffer();
+    if(!bytes.byteLength)throw new Error("El motor de voz devolvió un archivo vacío.");
+    const decoded=await context.decodeAudioData(bytes.slice(0));
+    const source=context.createBufferSource(),gain=context.createGain();
+    source.buffer=decoded;
+    const available=Math.max(1,duration-.8);
+    source.playbackRate.value=Math.min(1.35,Math.max(1,decoded.duration/available));
+    gain.gain.value=1;
+    source.connect(gain);gain.connect(destination);
+    source.start(context.currentTime+.65);
+    return ()=>{try{source.stop();}catch(_){}try{source.disconnect();gain.disconnect();}catch(_){}};
   }
 
   async function createVideo(){
