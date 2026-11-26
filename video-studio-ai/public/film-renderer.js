@@ -57,8 +57,7 @@
     const buffers=new Map();
     let token="";
     try{token=await window.VSAGetSessionToken();}catch(_){
-      status.textContent="La sesión de voz no está disponible; la película continuará con música y ambientes.";
-      return buffers;
+      throw new Error("No se pudo validar la sesión para generar las voces. No se creará una película sin diálogo.");
     }
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
     try{
@@ -70,17 +69,15 @@
           const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},
             body:JSON.stringify({action:"generate_speech",text:String(item.line.text).slice(0,1200),speaker})});
           if(!response.ok){
-            status.textContent=response.status===429
-              ?"Se agotó la cuota gratuita de voz; la película continuará con música y ambientes."
-              :"No se pudo generar la voz de "+item.line.character+"; se conservará la banda sonora.";
-            if(response.status===429)break;
-            continue;
+            throw new Error(response.status===429
+              ?"Se agotó la cuota gratuita diaria de voz. La película se detuvo para no entregar un video sin diálogos."
+              :"No se pudo generar la voz de "+item.line.character+". La película se detuvo para evitar un resultado sin diálogo.");
           }
           const bytes=await response.arrayBuffer();
           if(!bytes.byteLength)continue;
           buffers.set(item.segmentId+":"+item.index,await ctx.decodeAudioData(bytes.slice(0)));
         }catch(voiceError){
-          status.textContent="Una voz no estuvo disponible; el montaje continuará con música y efectos.";
+          throw voiceError;
         }
       }
     }finally{await ctx.close();}
@@ -102,9 +99,9 @@
     const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     await audioCtx.resume();
     const destination=audioCtx.createMediaStreamDestination(),master=audioCtx.createGain(),limiter=audioCtx.createDynamicsCompressor();
-    limiter.threshold.value=-18;limiter.knee.value=12;limiter.ratio.value=3.5;limiter.attack.value=.003;limiter.release.value=.2;
-    master.gain.value=.82;master.connect(limiter);limiter.connect(destination);
-    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.035:.06;music.connect(master);
+    limiter.threshold.value=-22;limiter.knee.value=14;limiter.ratio.value=4.5;limiter.attack.value=.003;limiter.release.value=.2;
+    master.gain.value=1.0;master.connect(limiter);limiter.connect(destination);
+    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.025:.045;music.connect(master);
     // A small harmonic bed is deliberately audible in the exported file.
     const musicOscillators=[];
     [110,164.81,220,261.63].forEach((frequency,index)=>{
@@ -157,7 +154,7 @@
           const samples=buffer.getChannelData(0);let energy=0,stride=Math.max(1,Math.floor(samples.length/8000)),count=0;
           for(let n=0;n<samples.length;n+=stride){energy+=samples[n]*samples[n];count++;}
           const rms=Math.sqrt(energy/Math.max(1,count));
-          gain.gain.value=Math.min(4.5,Math.max(1.25,.19/Math.max(.001,rms)));
+          gain.gain.value=Math.min(5.0,Math.max(1.6,.24/Math.max(.001,rms)));
           voice.connect(gain);gain.connect(master);
           const at=Number.isFinite(line.atSeconds)?line.atSeconds:Math.min(duration-.5,.6+(index*duration/Math.max(1,segment.dialogues.length)));
           voice.start(segmentStart+Math.max(0,Math.min(duration-.1,at)));
