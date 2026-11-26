@@ -158,7 +158,9 @@ async function createVideoJob(request,env,body,auth) {
     puerta:"door",impacto:"impact",tazas_vasos:"cups",risas:"laughter",conversaciones_fondo:"crowd",
     aves:"birds",animales:"animal",perros:"dog",gatos:"cat",caballos:"horse",cocina:"cooking",
     caja_registradora:"cash_register",carritos_compras:"shopping_cart",equipo_medico:"medical_beep",
-    alarma:"alarm",tren_metro:"train",aeropuerto:"aircraft",agua:"water",fuego:"fire",insectos:"insects"
+    alarma:"alarm",tren_metro:"train",aeropuerto:"aircraft",agua:"water",fuego:"fire",insectos:"insects",
+    paginas:"pages",timbre_escolar:"school_bell",elevador:"elevator",autobus:"bus",
+    construccion:"construction",gimnasio:"gym",campanas_iglesia:"church_bell"
   };
   const plannedEffects=manifestSegments.flatMap(segment=>(segment.audioCues||[])
     .map(cue=>effectMap[cue]).filter(Boolean).map(name=>({
