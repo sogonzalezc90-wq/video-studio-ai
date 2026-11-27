@@ -5,7 +5,7 @@ Los archivos de audio se descargan durante el despliegue desde Wikimedia Commons
 | Archivo | Uso | Autor | Licencia / fuente |
 |---|---|---|---|
 | rain.ogg | Lluvia real | ジダネ | Dominio público: https://commons.wikimedia.org/wiki/File:Rain.ogg |
-| forest.ogg | Ambiente de bosque, viento y aves | nille | Dominio público (PDSounds): https://commons.wikimedia.org/wiki/File:20090610_0_ambience.ogg |
+| forest.ogg | Aves de bosque abierto y brisa ligera | stephan | Dominio público (PDSounds): https://commons.wikimedia.org/wiki/File:Birdsong_mild_sunny_day.ogg |
 | birds.ogg | Canto de aves | Barracuda1983 | Dominio público: https://commons.wikimedia.org/wiki/File:Birds_forest.ogg |
 | footsteps.ogg | Pasos caminando sobre un sendero | tball74 | Dominio público: https://commons.wikimedia.org/wiki/File:Forest_track.ogg |
 | cafe.ogg | Cafetería y conversaciones lejanas | Marble Toast | CC0 1.0: https://commons.wikimedia.org/wiki/File:Cafe_ambiance.ogg |
