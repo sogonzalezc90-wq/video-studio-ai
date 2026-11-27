@@ -549,9 +549,9 @@
 
 
   const voicePreviewSamples = [
-    {id:"kiyoshima",name:"Kiyoshima",voice:"alvaro",label:"Voz masculina adulta · grave y serena",text:"Hermanos, escúchenme. No va a ser fácil conseguir ese automóvil, pero si trabajamos juntos, lo vamos a lograr."},
-    {id:"kashymoto",name:"Kashymoto",voice:"javier",label:"Voz masculina joven · alegre y enérgica",text:"¡Eso es! Yo estoy listo desde ahora. Denme una oportunidad y van a ver de lo que somos capaces."},
-    {id:"keriko",name:"Keriko",voice:"nestor",label:"Voz masculina joven · suave y reflexiva",text:"Esperen un momento. Primero hagamos las cuentas y organicemos el plan. Así tendremos más posibilidades de conseguirlo."}
+    {id:"kiyoshima",name:"Kiyoshima",voice:"sirio",label:"Voz masculina adulta · barítono mexicano, grave y sereno",text:"Hermanos, escúchenme. No va a ser fácil conseguir ese automóvil, pero si trabajamos juntos, lo vamos a lograr."},
+    {id:"kashymoto",name:"Kashymoto",voice:"aquila",label:"Voz masculina · latinoamericana, expresiva y enérgica",text:"¡Eso es! Yo estoy listo desde ahora. Denme una oportunidad y van a ver de lo que somos capaces."},
+    {id:"keriko",name:"Keriko",voice:"alvaro",label:"Voz masculina adulta · clara, tranquila y reflexiva",text:"Esperen un momento. Primero hagamos las cuentas y organicemos el plan. Así tendremos más posibilidades de conseguirlo."}
   ];
   async function generateVoicePreviews() {
     const button=$("voice-preview-generate");
