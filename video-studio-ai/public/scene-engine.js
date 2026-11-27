@@ -80,7 +80,8 @@
     // Accept screenplay forms such as "Diálogo: KIYOSHIMA (voz grave): «…»".
     const prefixed=value.match(/^(?:diálogo|dialogo)\s*:\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*:\s*[«“"]?(.+?)[»”"]?$/iu);
     const direct=value.match(/^[-–—]?\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*(?::|—|–)\s*[«“"]?(.+?)[»”"]?$/u);
-    const narrated=value.match(/^([\p{L}][\p{L}\p{M} .'-]{1,35}?)\s+(?:dice|responde|pregunta|grita|susurra|contesta|murmura)\s*[:,]?\s*[«“"](.+?)[»”"]$/iu);\n    const m=prefixed||direct||narrated;
+    const narrated=value.match(/^([\p{L}][\p{L}\p{M} .'-]{1,35}?)\s+(?:dice|responde|pregunta|grita|susurra|contesta|murmura)\s*[:,]?\s*[«“"](.+?)[»”"]$/iu);
+    const m=prefixed||direct||narrated;
     if(!m) return null;
     const character=m[1].trim().replace(/\s+/g," ");
     const text=m[2].trim().replace(/[»”"]+$/,"").replace(/^[«“"]+/,"").trim();
