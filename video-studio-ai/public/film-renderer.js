@@ -2,7 +2,6 @@
   "use strict";
   const $=id=>document.getElementById(id);
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const recorderType=()=>["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t))||"";
   function cueTone(ctx,dest,when,freq,duration,volume=.035,wave="sine"){
     if(duration<=0)return;
