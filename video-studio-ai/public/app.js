@@ -659,8 +659,10 @@
       if(prompt.length<30)throw new Error("Escribe o pega una historia de al menos 30 caracteres en el campo Guion o historia.");
       if(!projectId)throw new Error("Selecciona primero el proyecto destino en Genera imágenes con inteligencia artificial.");
       button.disabled=true;
-      message("wan-queue-message","Validando sesión y registrando el trabajo en Supabase…");
-      const {data:{session},error}=await client().auth.getSession();
+      message("wan-queue-message","Comprobando voces aprobadas y preparando audio sincronizado para Wan 2.2…");
+       await loadSpeechifyVoices();
+       const approvedVoiceIds=Array.isArray(window.VSAApprovedSpeechifyVoices)?window.VSAApprovedSpeechifyVoices:[];
+       const {data:{session},error}=await client().auth.getSession();
       if(error)throw error;
       if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
       const response=await fetch("/api/jobs",{
@@ -674,7 +676,10 @@
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok){const detail=result.details?("\nDetalle técnico: "+JSON.stringify(result.details)): "";throw new Error((result.message||result.error||"No se pudo registrar el trabajo.")+detail);}
       const durationLabel=durationSeconds<60?durationSeconds+" segundos":Math.floor(durationSeconds/60)+" minuto(s)"+(durationSeconds%60?" y "+(durationSeconds%60)+" segundos":"");
-      const confirmation="Trabajo de "+durationLabel+" registrado correctamente. ID: "+result.job.id+". Estado: en espera de GPU. El notebook Kaggle debe estar activo para procesarlo.";
+      const audioNote=result.speechify_dialogues
+         ?" "+result.speechify_dialogues+" diálogos sintetizados con voces Speechify aprobadas ("+result.speechify_characters+" caracteres) y guardados para sincronización."
+         :" No se detectaron diálogos; se conservarán música, ambientes y efectos.";
+       const confirmation="Trabajo de "+durationLabel+" registrado correctamente. ID: "+result.job.id+"."+audioNote+" Estado: en espera de GPU. El notebook Kaggle debe estar activo para procesarlo.";
       message("wan-queue-message",confirmation);
       message("video-message",confirmation);
       await loadWanJobs();
