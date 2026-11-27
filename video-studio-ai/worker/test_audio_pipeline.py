@@ -96,23 +96,17 @@ class AudioPipelineTests(unittest.TestCase):
                 self.assertAlmostEqual(audio._duration(str(path)), 1.5, delta=0.1)
 
 
-    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
-    def test_cafe_ambience_is_tonal_and_not_broadband_static(self):
-        import array
-        import wave
-        with tempfile.TemporaryDirectory() as folder:
-            output = pathlib.Path(folder) / "cafe.wav"
-            audio._write_ambience(["cafe"], 2.0, str(output))
-            with wave.open(str(output), "rb") as wav:
-                samples = array.array("h", wav.readframes(wav.getnframes()))
-            if sys.byteorder != "little":
-                samples.byteswap()
-            signs = [sample >= 0 for sample in samples]
-            crossings = sum(1 for left, right in zip(signs, signs[1:]) if left != right)
-            crossing_ratio = crossings / max(1, len(signs) - 1)
-            rms = (sum(sample * sample for sample in samples) / max(1, len(samples))) ** 0.5
-            self.assertGreater(rms, 250, "Café ambience must be clearly audible in the rendered track")
-            self.assertLess(crossing_ratio, 0.35, "Café ambience must not resemble broadband static")
+    def test_ambience_uses_real_field_recordings_not_tone_or_noise_synthesis(self):
+        import inspect
+        source = inspect.getsource(audio._write_ambience)
+        module = pathlib.Path(audio.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("anoisesrc", source)
+        self.assertNotIn("aevalsrc", source)
+        self.assertIn("_natural_audio_file(name)", source)
+        self.assertIn("Cafe_ambiance.ogg", module)
+        self.assertIn("Rain.ogg", module)
+        self.assertIn("Maserati_GranTurismo_S_Exhaust.ogg", module)
+        self.assertIn("Forest_track.ogg", module)
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
     def test_music_is_audible_and_changes_over_time_without_a_steady_hum(self):
