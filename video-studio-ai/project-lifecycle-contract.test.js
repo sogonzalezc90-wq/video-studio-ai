@@ -38,5 +38,5 @@ test("production SQL limits project and asset metadata to authenticated users", 
 });
 
 test("production HTML points to the project lifecycle assets", () => {
-  assert.ok(html.includes("/app.js?v=20261127-audio7"));
+  assert.ok(html.includes("/app.js?v=20261127-audio8"));
 });
