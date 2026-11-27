@@ -203,8 +203,10 @@ def fetch_speechify_dialogue_audio(job, job_dir, audio_script):
         return audio_script
     user_id = str(job.get("user_id") or "")
     project_id = str(job.get("project_id") or "")
-    job_id = str(job.get("id") or "")
-    expected_prefix = f"{user_id}/{project_id}/speechify/{job_id}/"
+    batch_id = str((job.get("payload") or {}).get("speechify_audio_batch_id") or "")
+    if not re.fullmatch(r"[0-9a-f-]{36}", batch_id, re.IGNORECASE):
+        raise RuntimeError("El lote de audios Speechify no tiene un identificador válido.")
+    expected_prefix = f"{user_id}/{project_id}/speechify/{batch_id}/"
     speech_dir = pathlib.Path(job_dir) / "speechify_dialogue"
     speech_dir.mkdir(parents=True, exist_ok=True)
     for index, line in enumerate(dialogues):
