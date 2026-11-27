@@ -107,6 +107,8 @@ class AudioPipelineTests(unittest.TestCase):
         self.assertIn("Rain.ogg", module)
         self.assertIn("Maserati_GranTurismo_S_Exhaust.ogg", module)
         self.assertIn("Forest_track.ogg", module)
+        self.assertIn("Birdsong_mild_sunny_day.ogg", module)
+        self.assertNotIn("20090610_0_ambience.ogg", module)
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
     def test_music_is_audible_and_changes_over_time_without_a_steady_hum(self):
