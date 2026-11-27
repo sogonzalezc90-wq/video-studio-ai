@@ -36,7 +36,8 @@
         text:String(item.line.text||"").trim(),
         voice:item.segment.voiceAssignments?.[item.line.character]||""
       }));
-      if(dialogues.some(item=>!item.voice))throw new Error("Falta aprobar y asignar una voz Speechify a uno o más personajes antes del montaje.");
+      const approvedVoices=new Set(window.VSAProductionEngine?.VOICES||[]);
+      if(dialogues.some(item=>!item.voice||!approvedVoices.has(item.voice)))throw new Error("Falta aprobar y asignar una voz Speechify aprobada a uno o más personajes antes del montaje.");
       for(let offset=0;offset<dialogues.length;offset+=15){
         if(offset)await sleep(1100);
         const batch=dialogues.slice(offset,offset+15);
