@@ -18,3 +18,12 @@ test("film renderer requests all character dialogue voices in one quota-safe bat
  assert.match(source,/buffers\.size!==lines\.length/);
  assert.doesNotMatch(source,/action:"generate_speech"/);
 });
+
+test("long-film renderer uses plucked music, pink-noise ambience and peak-safe normalized dialogue",()=>{
+ const source=require("node:fs").readFileSync("public/film-renderer.js","utf8");
+ assert.match(source,/function cueMusicPluck/);
+ assert.match(source,/let b0=0,b1=0,b2=0/);
+ assert.match(source,/peak<\.002/);
+ assert.match(source,/limiter\.threshold\.value=-10/);
+ assert.match(source,/voiceCompressor\.ratio\.value=4/);
+});
