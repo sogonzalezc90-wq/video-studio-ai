@@ -460,7 +460,7 @@ export async function onRequestPost({request,env}) {
     const upstreamStatus=Number(error?.status||error?.statusCode||0)||null;
     console.error("VIDEO STUDIO AI Workers AI generation failed:",{status:upstreamStatus,message:detail});
     if(/Speechify respondió HTTP 429/i.test(detail))
-      return json({ok:false,error:"azure_speech_rate_limited",message:"Speechify limitó temporalmente las solicitudes. Espera el tiempo indicado por el servicio y vuelve a intentarlo. No se activó ningún servicio de pago."},429);
+      return json({ok:false,error:"speechify_rate_limited",message:"Speechify limitó temporalmente las solicitudes. Espera el tiempo indicado por el servicio y vuelve a intentarlo. No se activó ningún servicio de pago."},429);
     if(quotaError(error)||upstreamStatus===429||/5028|quota|daily limit|neurons exhausted/i.test(detail))
       return json({
         ok:false,error:"free_quota_exhausted",
