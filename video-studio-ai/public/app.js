@@ -664,8 +664,6 @@
       if(!projectId)throw new Error("Selecciona primero el proyecto destino en Genera imágenes con inteligencia artificial.");
       button.disabled=true;
       message("wan-queue-message","Consultando voces aprobadas y el guion cinematográfico…");
-      await loadSpeechifyVoices();
-      const approvedVoiceIds=Array.isArray(window.VSAApprovedSpeechifyVoices)?window.VSAApprovedSpeechifyVoices:[];
       const {data:{session},error}=await client().auth.getSession();
       if(error)throw error;
       if(!session?.access_token||!session.user?.id)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
@@ -682,6 +680,8 @@
         voice:String(segment.voiceAssignments?.[line.character]||""),
         character:String(line.character||"")
       }))).filter(line=>line.character&&line.text.length>1);
+      if(dialogueLines.length)await loadSpeechifyVoices();
+      const approvedVoiceIds=Array.isArray(window.VSAApprovedSpeechifyVoices)?window.VSAApprovedSpeechifyVoices:[];
       const totalCharacters=dialogueLines.reduce((sum,line)=>sum+Array.from(line.text).length,0);
       if(totalCharacters>21000)throw new Error("Los diálogos de esta película suman "+totalCharacters+" caracteres. El máximo gratuito preventivo es 21,000; divide la historia en partes.");
       if(dialogueLines.length>200)throw new Error("La película tiene más de 200 intervenciones. Divide el guion en partes para mantener la sincronización y el control de consumo.");
