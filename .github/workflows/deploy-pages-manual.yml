@@ -50,6 +50,23 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing GitHub secret: CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing GitHub secret: CLOUDFLARE_ACCOUNT_ID"; exit 1; }
 
+      - name: Download royalty-free natural ambience recordings
+        working-directory: video-studio-ai
+        run: |
+          set -euo pipefail
+          mkdir -p public/audio
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/3/3d/Rain.ogg" -o public/audio/rain.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/0/0a/20090610_0_ambience.ogg" -o public/audio/forest.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/3/38/Birds_forest.ogg" -o public/audio/birds.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/5/54/Cafe_ambiance.ogg" -o public/audio/cafe.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/8/88/Sonido_del_centro_de_la_ciudad_a_las_8_de_la_ma%C3%B1ana.ogg" -o public/audio/city.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/9/98/Maserati_GranTurismo_S_Exhaust.ogg" -o public/audio/engine.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/d/d2/Mowing_and_sawing_etc.ogg" -o public/audio/workshop.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/7/74/Door_handle_creaking.ogg" -o public/audio/door.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/2/26/Flowing-water-100019.ogg" -o public/audio/water.ogg
+          for file in public/audio/*.ogg; do test "$(stat -c%s "$file")" -gt 2048; done
+          echo "NATURAL SOUND LIBRARY READY"
+          du -h public/audio/*.ogg
       - name: Deploy existing Pages project
         working-directory: video-studio-ai
         env:
