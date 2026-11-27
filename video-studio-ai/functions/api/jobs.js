@@ -306,8 +306,8 @@ export async function onRequestPost({request,env}) {
       const speechAuth=await queueAuth(request,env);
       if(speechAuth.error)return speechAuth.error;
       const rows=Array.isArray(body.dialogues)?body.dialogues:[];
-      if(!rows.length||rows.length>160)
-        return json({ok:false,error:"invalid_speech_batch",message:"El lote debe contener entre 1 y 160 intervenciones."},400);
+      if(!rows.length||rows.length>40)
+        return json({ok:false,error:"invalid_speech_batch",message:"El lote debe contener entre 1 y 40 intervenciones."},400);
       const dialogues=rows.map((row,index)=>({
         index:Number.isInteger(Number(row?.index))?Number(row.index):index,
         segmentId:String(row?.segmentId??"").slice(0,80),
