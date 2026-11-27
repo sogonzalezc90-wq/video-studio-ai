@@ -1,16 +1,16 @@
 (() => {
   "use strict";
   const ASSETS = {
-    rain: "/audio/rain.ogg",
-    forest: "/audio/forest.ogg",
-    birds: "/audio/birds.ogg",
-    footsteps: "/audio/footsteps.ogg",
-    cafe: "/audio/cafe.ogg",
-    city: "/audio/city.ogg",
-    engine: "/audio/engine.ogg",
-    workshop: "/audio/workshop.ogg",
-    door: "/audio/door.ogg",
-    water: "/audio/water.ogg"
+    rain: "/audio/rain.ogg?v=20261127-natural2",
+    forest: "/audio/forest.ogg?v=20261127-natural2",
+    birds: "/audio/birds.ogg?v=20261127-natural2",
+    footsteps: "/audio/footsteps.ogg?v=20261127-natural2",
+    cafe: "/audio/cafe.ogg?v=20261127-natural2",
+    city: "/audio/city.ogg?v=20261127-natural2",
+    engine: "/audio/engine.ogg?v=20261127-natural2",
+    workshop: "/audio/workshop.ogg?v=20261127-natural2",
+    door: "/audio/door.ogg?v=20261127-natural2",
+    water: "/audio/water.ogg?v=20261127-natural2"
   };
   const CUES = {
     lluvia:["rain"], rain:["rain"],
@@ -91,5 +91,5 @@
       }
     };
   }
-  window.VSANaturalAudio = { load, assetKeys, sources: ASSETS, version: "natural1" };
+  window.VSANaturalAudio = { load, assetKeys, sources: ASSETS, version: "natural2" };
 })();
