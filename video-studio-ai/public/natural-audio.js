@@ -18,7 +18,7 @@
     aves:["birds"], birds:["birds"], pasos:["footsteps"], footsteps:["footsteps"], ambiente_zoologico:["forest","birds"], zoo:["forest","birds"],
     ambiente_parque:["forest","birds"], park:["forest","birds"], farm:["forest","birds"],
     ambiente_cafeteria:["cafe"], cafe:["cafe"], cafeteria:["cafe"],
-    ambiente_restaurante:["cafe"], restaurant:["cafe"], cocina:["cafe"],
+    ambiente_restaurante:["cafe"], restaurant:["cafe"],
     ambiente_mercado:["cafe"], market:["cafe"], ambiente_plaza_comercial:["cafe"], mall:["cafe"],
     ambiente_escuela:["cafe"], school:["cafe"], ambiente_hotel:["cafe"], hotel:["cafe"],
     conversaciones_fondo:["cafe"], chatter:["cafe"], crowd:["cafe"], multitud:["cafe"],
@@ -28,7 +28,7 @@
     herramientas_taller:["workshop"], workshop:["workshop"], ambiente_construccion:["workshop"],
     construction:["workshop"], kitchen:["workshop"],
     puerta:["door"], door:["door"],
-    agua:["water"], water:["water"], river:["water"], pool:["water"]
+    agua:["water"], water:["water"], river:["water"]
   };
   const ONE_SHOT = new Set(["door"]);
   const decoded = new WeakMap();
