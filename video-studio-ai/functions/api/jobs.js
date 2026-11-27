@@ -323,6 +323,7 @@ export async function onRequestPost({request,env}) {
 
     if(body.action==="generate_speech_batch"||body.action==="generate_azure_speech_batch"){
       const speechAuth=await queueAuth(request,env);if(speechAuth.error)return speechAuth.error;
+      if(!env.AZURE_SPEECH_KEY||!env.AZURE_SPEECH_REGION)return json({ok:false,error:"azure_speech_not_configured",message:"Configura AZURE_SPEECH_KEY y AZURE_SPEECH_REGION en Cloudflare Pages antes de generar audios."},503);
       const rows=Array.isArray(body.dialogues)?body.dialogues:[];
       if(!rows.length||rows.length>15)return json({ok:false,error:"invalid_speech_batch",message:"La audición admite entre 1 y 15 voces por lote."},400);
       const dialogues=rows.map((row,index)=>({index:Number.isInteger(Number(row?.index))?Number(row.index):index,segmentId:String(row?.segmentId??"").slice(0,80),text:typeof row?.text==="string"?row.text.trim():"",voice:azureVoice(row?.voice??row?.speaker)}));
@@ -337,6 +338,7 @@ export async function onRequestPost({request,env}) {
     }
     if(body.action==="generate_speech"||body.action==="generate_azure_speech"){
       const speechAuth=await queueAuth(request,env);if(speechAuth.error)return speechAuth.error;
+      if(!env.AZURE_SPEECH_KEY||!env.AZURE_SPEECH_REGION)return json({ok:false,error:"azure_speech_not_configured",message:"Configura AZURE_SPEECH_KEY y AZURE_SPEECH_REGION en Cloudflare Pages antes de generar audios."},503);
       const text=typeof body.text==="string"?body.text.trim():"";const voice=azureVoice(body.voice??body.speaker??"es-MX-JorgeNeural");const characters=[...text].length;
       if(!text||characters>MAX_SPEECH_TEXT)return json({ok:false,error:"invalid_speech_text",message:"Cada fragmento debe contener entre 1 y 5,000 caracteres. Divide las narraciones largas automáticamente."},400);
       if(!voice)return json({ok:false,error:"invalid_speaker",message:"La voz seleccionada no está disponible en el catálogo mexicano."},400);
@@ -428,6 +430,8 @@ export async function onRequestPost({request,env}) {
     const detail=String(error?.message||error||"Error desconocido").replace(/[\\r\\n]+/g," ").slice(0,900);
     const upstreamStatus=Number(error?.status||error?.statusCode||0)||null;
     console.error("VIDEO STUDIO AI Workers AI generation failed:",{status:upstreamStatus,message:detail});
+    if(/Azure Speech respondió HTTP 429/i.test(detail))
+      return json({ok:false,error:"azure_speech_rate_limited",message:"Azure Speech F0 permite hasta 20 solicitudes por cada 60 segundos. Espera un minuto y vuelve a intentarlo. No se usó ningún servicio de pago."},429);
     if(quotaError(error)||upstreamStatus===429||/5028|quota|daily limit|neurons exhausted/i.test(detail))
       return json({
         ok:false,error:"free_quota_exhausted",
