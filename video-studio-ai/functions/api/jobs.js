@@ -125,45 +125,6 @@ async function synthesizeSpeechify(text,voice,env){
   const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error("Speechify devolvió un audio vacío.");return bytes;
 }
 
-async function buildSpeechifyDialogueAssets(auth,env,projectId,jobId,dialogues){
-  if(!dialogues.length)return [];
-  if(!env.SPEECHIFY_API_KEY)throw new Error("Speechify no está configurado en Cloudflare Pages.");
-  const total=dialogues.reduce((sum,line)=>sum+Array.from(line.text).length,0);
-  if(total>MAX_SPEECH_BATCH_CHARS)throw new Error("Los diálogos superan el límite gratuito de 21,000 caracteres por película.");
-  if(dialogues.some(line=>!line.voice||!Array.from(line.text).length||Array.from(line.text).length>MAX_SPEECH_TEXT))
-    throw new Error("Cada diálogo debe tener texto y una voz Speechify aprobada; máximo 20,000 caracteres por intervención.");
-  const reserved=await reserveSpeechifyCharacters(auth,total);
-  if(!reserved)throw new Error("Se alcanzó el tope preventivo gratuito de Speechify (450,000 caracteres este mes). No se usará un motor de pago.");
-  const uploaded=[],records=[];
-  try{
-    for(let i=0;i<dialogues.length;i++){
-      if(i)await new Promise(resolve=>setTimeout(resolve,1100));
-      const line=dialogues[i];
-      const bytes=await synthesizeSpeechify(line.text,line.voice,env);
-      const path=auth.user.id+"/"+projectId+"/speechify/"+jobId+"/dialogue_"+String(i+1).padStart(4,"0")+".mp3";
-      const encoded=path.split("/").map(encodeURIComponent).join("/");
-      const response=await fetch(auth.base+"/storage/v1/object/video-assets/"+encoded,{
-        method:"POST",
-        headers:{apikey:auth.key,authorization:"Bearer "+auth.token,"content-type":"audio/mpeg","x-upsert":"false"},
-        body:bytes
-      });
-      if(!response.ok)throw new Error("No se pudo guardar el audio Speechify "+(i+1)+" en Supabase ("+response.status+"): "+(await response.text().catch(()=>"")).slice(0,250));
-      uploaded.push(path);
-      line.audio_storage_path=path;
-      records.push({project_id:projectId,user_id:auth.user.id,storage_path:path,file_name:"speechify-"+jobId.slice(0,8)+"-dialogue-"+String(i+1).padStart(4,"0")+".mp3",mime_type:"audio/mpeg",asset_type:"audio"});
-    }
-    const db=await fetch(auth.base+"/rest/v1/project_assets",{
-      method:"POST",headers:{apikey:auth.key,authorization:"Bearer "+auth.token,"content-type":"application/json",prefer:"return=minimal"},
-      body:JSON.stringify(records)
-    });
-    if(!db.ok)throw new Error("Los audios se generaron, pero no se pudieron registrar en la biblioteca privada de Supabase: "+(await db.text().catch(()=>"")).slice(0,300));
-    return uploaded;
-  }catch(error){
-    await Promise.all(uploaded.map(path=>fetch(auth.base+"/storage/v1/object/video-assets/"+path.split("/").map(encodeURIComponent).join("/"),{method:"DELETE",headers:{apikey:auth.key,authorization:"Bearer "+auth.token}}).catch(()=>null)));
-    throw error;
-  }
-}
-
 async function createOptionalDialogueScript(prompt,durationSeconds,env) {
   if(env.VSA_ENABLE_AI_DIALOGUE!=="true"||!env.AI?.run) return null;
   try {
@@ -277,7 +238,16 @@ async function createVideoJob(request,env,body,auth) {
   if(plannedDialogues.some(line=>Array.from(line.text).length>MAX_SPEECH_TEXT))
     return json({ok:false,error:"speechify_line_too_long",message:"Un diálogo individual supera 20,000 caracteres. Divide ese parlamento en intervenciones más cortas."},413);
   const jobId=crypto.randomUUID();
-  const audioAssets=await buildSpeechifyDialogueAssets(auth,env,projectId,jobId,plannedDialogues);
+  const speechifyBatchId=typeof body.speechAudioBatchId==="string"?body.speechAudioBatchId:"";
+  const speechAudioPaths=Array.isArray(body.speechAudioPaths)?body.speechAudioPaths:[];
+  if(plannedDialogues.length){
+    if(!/^[0-9a-f-]{36}$/i.test(speechifyBatchId)||speechAudioPaths.length!==plannedDialogues.length)
+      return json({ok:false,error:"speechify_audio_not_prepared",message:"Primero genera y guarda los audios Speechify de todos los diálogos aprobados; después vuelve a enviar el video neuronal."},409);
+    const expectedPrefix=auth.user.id+"/"+projectId+"/speechify/"+speechifyBatchId+"/";
+    if(speechAudioPaths.some(path=>typeof path!=="string"||!path.startsWith(expectedPrefix)||!/^.+\\.mp3$/i.test(path)))
+      return json({ok:false,error:"speechify_audio_path_invalid",message:"Uno o más archivos de voz no pertenecen al proyecto y lote de audio actual."},403);
+    plannedDialogues.forEach((line,index)=>{line.audio_storage_path=speechAudioPaths[index];});
+  }
   const audioScript=(plannedDialogues.length||plannedEffects.length)
     ? {source:"speechify_production_manifest",dialogues:plannedDialogues,effects:plannedEffects}
     : {source:"production_manifest_no_dialogue",dialogues:[],effects:[]};
@@ -294,7 +264,7 @@ async function createVideoJob(request,env,body,auth) {
   });
   const result=await response.json().catch(()=>[]);
   if(!response.ok){const db=Array.isArray(result)?result[0]:result;const code=db?.code||"sin código";const detail=[db?.message,db?.details,db?.hint].filter(Boolean).join(" · ");return json({ok:false,error:"job_create_failed",message:"Supabase rechazó el registro del trabajo (código "+code+"). "+(detail||"Comprueba que public.video_jobs exista y tenga las columnas requeridas. Aplica la migración supabase/migrations/202611190001_video_jobs.sql."),details:result},response.status);}
-  return json({ok:true,status:"queued",audio_script_mode:plannedDialogues.length?"speechify_approved_character_voices":"ambient_only",speechify_dialogues:plannedDialogues.length,speechify_characters:totalDialogueCharacters,speechify_audio_assets:audioAssets.length,job:Array.isArray(result)?result[0]:result},201);
+  return json({ok:true,status:"queued",audio_script_mode:plannedDialogues.length?"speechify_approved_character_voices":"ambient_only",speechify_dialogues:plannedDialogues.length,speechify_characters:totalDialogueCharacters,speechify_audio_assets:speechAudioPaths.length,job:Array.isArray(result)?result[0]:result},201);
 }
 
 async function removeStoredRender(auth,outputPath) {
