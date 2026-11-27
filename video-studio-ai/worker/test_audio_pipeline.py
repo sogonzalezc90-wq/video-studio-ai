@@ -114,6 +114,28 @@ class AudioPipelineTests(unittest.TestCase):
             self.assertGreater(rms, 80, "Café ambience must be audible in the rendered track")
             self.assertLess(crossing_ratio, 0.35, "Café ambience must not resemble broadband static")
 
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
+    def test_music_is_audible_and_changes_over_time_without_a_steady_hum(self):
+        import array
+        import wave
+        with tempfile.TemporaryDirectory() as folder:
+            output = pathlib.Path(folder) / "score.wav"
+            audio._write_music("action", 4.8, str(output))
+            with wave.open(str(output), "rb") as wav:
+                samples = array.array("h", wav.readframes(wav.getnframes()))
+                rate = wav.getframerate()
+            if sys.byteorder != "little":
+                samples.byteswap()
+            mono = samples[::2]
+            frame = int(rate * 0.24)
+            levels = []
+            for offset in range(0, len(mono) - frame, frame):
+                chunk = mono[offset:offset + frame]
+                levels.append((sum(x * x for x in chunk) / len(chunk)) ** 0.5)
+            self.assertGreater(max(levels), 120, "Music must be clearly audible")
+            self.assertGreater(max(levels) - min(levels), 35, "Plucked score must vary rather than remain a constant drone")
+            self.assertGreater(sum(1 for x in levels if x > 60), len(levels) // 2)
+
     def test_voice_mastering_and_final_loudness_contract(self):
         source = pathlib.Path(audio.__file__).read_text(encoding="utf-8")
         self.assertIn('equalizer=f=3200:t=q:w=1.0:g=2.5', source)
