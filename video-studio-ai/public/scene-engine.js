@@ -267,50 +267,45 @@
       tone(ctx,dest,at+.025,frequency*1.48,.09,"sine",.006,frequency*1.2);
     }
   }
-  function buildAudio(ctx,destination,duration,analysis){
+  async function buildAudio(ctx,destination,duration,analysis){
+    if(!window.VSANaturalAudio)throw new Error("La biblioteca de ambientes naturales no está disponible. Actualiza la aplicación.");
+    const cueRows=analysis.scenes.map(scene=>audioCuesFor(scene,scene.shots?.[0]));
+    const allCues=cueRows.flat();
+    const natural=await window.VSANaturalAudio.load(ctx,allCues);
     const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
     compressor.threshold.value=-12;compressor.knee.value=4;compressor.ratio.value=12;
     compressor.attack.value=.003;compressor.release.value=.24;
-    master.gain.value=.92;music.gain.value=analysis.hasDialogue?.52:.72;
+    master.gain.value=.92;music.gain.value=analysis.hasDialogue?.22:.42;
     music.connect(master);master.connect(compressor);compressor.connect(destination);
-    // Plucked, changing arpeggio: no sustained low-frequency chord that can sound like a hum.
     const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
     const scale=mood==="suspenso"?[146.83,174.61,220,293.66,261.63,220]:mood==="accion"?[196,246.94,293.66,392,349.23,293.66]:[220,261.63,329.63,392,349.23,293.66];
     const beat=mood==="accion"?.34:.48;
     for(let t=0,n=0;t<duration;t+=beat,n++){
       const at=start+t,root=scale[n%scale.length];
-      addMusicPluck(ctx,music,at,root,.34,mood==="suspenso"?.12:.11);
-      if(n%3===1)addMusicPluck(ctx,music,at+.12,root*2,.22,.025);
+      addMusicPluck(ctx,music,at,root,.34,.065);
+      if(n%3===1)addMusicPluck(ctx,music,at+.12,root*2,.22,.014);
     }
     const span=duration/Math.max(1,analysis.scenes.length);
-    analysis.scenes.forEach((s,i)=>{
-      const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
-      if(s.types.includes("car"))addEngineRev(ctx,master,when,len,.095);
-      if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
-      if(s.types.includes("rain"))noise(ctx,master,when,len,.045,"lowpass",4200);
-      if(s.types.includes("wind"))noise(ctx,master,when,len,.035,"lowpass",900);
-      if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,92+(k%2)*22,.12,"triangle",.035,48);
-      if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.012,"highpass",2600);}
-      if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
-      if(s.types.includes("impact")){noise(ctx,master,when,.5,.055,"lowpass",650);tone(ctx,master,when,105,.22,"triangle",.035,42);}
-      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.03);addGlassClinks(ctx,master,when,3);}
-      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.032);
-      if(s.types.includes("cups"))addGlassClinks(ctx,master,when,3);
-      if(s.types.includes("laughter")){tone(ctx,master,when+1.1,520,.22,"triangle",.006,690);tone(ctx,master,when+1.38,650,.2,"triangle",.005,790);}
-      if(s.types.includes("zoo")||s.types.includes("birds"))addBirdChirps(ctx,master,when,len);
-      if(s.types.includes("clinic")||s.types.includes("medical")){tone(ctx,master,when+1.2,880,.08,"sine",.006,880);tone(ctx,master,when+3.1,880,.08,"sine",.006,880);}
-      if(s.types.includes("market")||s.types.includes("mall"))addMurmur(ctx,master,when,len,.024);
-      if(s.types.includes("restaurant")||s.types.includes("kitchen")){addMurmur(ctx,master,when,len,.012);addGlassClinks(ctx,master,when,3);}
-      if(s.types.includes("racetrack")){addEngineRev(ctx,master,when,len,.032);addMurmur(ctx,master,when,len,.009);}
-      if(s.types.includes("street"))addPassingTraffic(ctx,master,when,len);
-      if(s.types.includes("cash"))for(let k=0;k<2;k++)tone(ctx,master,when+.7+k*1.3,1450,.08,"sine",.012,1450);
-      if(s.types.includes("shopping"))noise(ctx,master,when,len,.008,"bandpass",2800);
-      if(s.types.includes("train")||s.types.includes("airport"))noise(ctx,master,when,len,.014,"lowpass",1000);
-      if(s.types.includes("water"))noise(ctx,master,when,len,.018,"lowpass",2200);
-      if(s.types.includes("dog")||s.types.includes("cat")||s.types.includes("horse")||s.types.includes("animal"))tone(ctx,master,when+Math.min(1,len*.2),260,.22,"triangle",.007,390);
-      if(s.types.includes("alarm"))tone(ctx,master,when,880,.45,"sine",.012,660);
-      if(s.dialogues.length){music.gain.setValueAtTime(.18,when);music.gain.setValueAtTime(analysis.hasDialogue?.52:.72,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
-      if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
+    analysis.scenes.forEach((scene,index)=>{
+      const when=start+index*span,len=Math.max(.5,Math.min(span*.8,6));
+      const cues=cueRows[index]||[];
+      const ambienceLevel=scene.dialogues.length?.66:.88;
+      cues.forEach(cue=>{
+        if(window.VSANaturalAudio.assetKeys([cue]).length)
+          natural.play(master,cue,when,len,ambienceLevel);
+      });
+      if(scene.types.includes("cups"))addGlassClinks(ctx,master,when,3);
+      if(scene.types.includes("impact"))tone(ctx,master,when,105,.22,"triangle",.035,42);
+      if(scene.types.includes("alarm"))tone(ctx,master,when,880,.45,"sine",.012,660);
+      if(scene.types.includes("clinic")||scene.types.includes("medical")){
+        tone(ctx,master,when+1.2,880,.08,"sine",.006,880);
+        tone(ctx,master,when+3.1,880,.08,"sine",.006,880);
+      }
+      if(scene.dialogues.length){
+        music.gain.setValueAtTime(.075,when);
+        music.gain.setValueAtTime(.22,Math.min(start+duration-.05,when+Math.max(1,len*.7)));
+      }
+      if(scene.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
     return ()=>{try{master.disconnect();music.disconnect();compressor.disconnect();}catch(_){}};
   }
