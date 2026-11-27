@@ -20,7 +20,7 @@ jobs:
       - name: Verify deployed audio engines and speech pipeline
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
-          ASSET_VERSION: "20261127-audio5"
+          ASSET_VERSION: "20261127-audio6"
         run: |
           set -euo pipefail
           has() { grep -Fq -- "$1" <<< "$2"; }
@@ -32,13 +32,13 @@ jobs:
             else
               scene=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION")
               scene_ok=true
-              for token in 'audioVersion:"20261127-audio5"' 'function addMurmur' 'function addBirdChirps' 'function addEngineRev' 'ambiente_zoologico' 'ambiente_consultorio' 'ambiente_mercado' 'ambiente_plaza_comercial' 'ambiente_restaurante' 'ambiente_autodromo' 'ambiente_calle' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio'; do
+              for token in 'audioVersion:"20261127-audio6"' 'function addMurmur' 'function addBirdChirps' 'function addEngineRev' 'function addMusicPluck' 'Pink/brown-leaning ambience' 'ambiente_zoologico' 'ambiente_consultorio' 'ambiente_mercado' 'ambiente_plaza_comercial' 'ambiente_restaurante' 'ambiente_autodromo' 'ambiente_calle' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio'; do
                 if ! has "$token" "$scene"; then echo "Missing scene-engine token: $token"; scene_ok=false; fi
               done
               if [ "$scene_ok" = true ]; then
                 renderer=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
                 renderer_ok=true
-                for token in 'cueMurmur' 'limiter.threshold.value=-22' 'action:"generate_speech_batch"' 'total>3500' 'ambiente_zoologico' 'equipo_medico' 'caja_registradora' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio' 'paginas' 'campanas_iglesia' 'elevador'; do
+                for token in 'cueMurmur' 'cueMusicPluck' 'limiter.threshold.value=-10' 'peak=Math.max(peak,sample)' 'action:"generate_speech_batch"' 'total>3500' 'ambiente_zoologico' 'equipo_medico' 'caja_registradora' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio' 'paginas' 'campanas_iglesia' 'elevador'; do
                   if ! has "$token" "$renderer"; then echo "Missing film-renderer token: $token"; renderer_ok=false; fi
                 done
                 if [ "$renderer_ok" = true ]; then
