@@ -60,7 +60,12 @@ def _natural_audio_file(name):
     target = folder / (name + ".ogg")
     if not target.exists() or target.stat().st_size < 2048:
         try:
-            urllib.request.urlretrieve(NATURAL_AUDIO_URLS[name], target)
+            request = urllib.request.Request(
+                NATURAL_AUDIO_URLS[name],
+                headers={"User-Agent": "Mozilla/5.0 (compatible; VIDEO-STUDIO-AI/1.0)", "Accept": "audio/ogg,*/*"},
+            )
+            with urllib.request.urlopen(request, timeout=60) as response:
+                target.write_bytes(response.read())
         except Exception as exc:
             target.unlink(missing_ok=True)
             raise RuntimeError("No se pudo descargar el ambiente natural " + name + ". No se sustituirá por ruido sintético.") from exc
