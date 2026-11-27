@@ -184,12 +184,15 @@
       } else if((asset.asset_type||"image")==="video" || (asset.mime_type||"").startsWith("video/")){
         const video=document.createElement("video"); video.controls=true; video.preload="metadata"; video.src=signed.signedUrl;
         video.style.cssText="display:block;width:100%;max-height:260px;border-radius:10px;margin-top:10px"; card.append(video);
+      } else if((asset.mime_type||"").startsWith("audio/")||(asset.asset_type||"")==="audio") {
+        const audio=document.createElement("audio");audio.controls=true;audio.preload="none";audio.src=signed.signedUrl;
+        audio.style.cssText="display:block;width:100%;margin-top:10px";card.append(audio);
       } else {
         const image=document.createElement("img"); image.loading="lazy"; image.alt=asset.file_name; image.src=signed.signedUrl;
         image.style.cssText="display:block;width:100%;max-height:260px;object-fit:contain;border-radius:10px;margin-top:10px"; card.append(image);
       }
       const removeButton=document.createElement("button");
-      removeButton.type="button";removeButton.className="danger-button";removeButton.textContent=(asset.asset_type||"image")==="video"?"Eliminar video":"Eliminar imagen";
+      removeButton.type="button";removeButton.className="danger-button";removeButton.textContent=(asset.asset_type||"image")==="video"?"Eliminar video":(asset.asset_type||"")==="audio"?"Eliminar audio":"Eliminar imagen";
       removeButton.addEventListener("click",()=>deleteAsset(asset,removeButton));
       card.append(removeButton);
       root.append(card);
