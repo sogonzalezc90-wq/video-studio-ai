@@ -8,6 +8,32 @@ const SPEECH_MODEL="@cf/deepgram/aura-2-es";
 const MAX_PROMPT=3000;
 const MAX_SPEECH_TEXT=1200;
 const SPEAKERS=new Set(["sirio","nestor","carina","celeste","alvaro","diana","aquila","selena","estrella","javier"]);
+const MAX_SPEECH_BATCH_CHARS=3500;
+
+async function speechOutputBytes(output) {
+  let audio=typeof ReadableStream!=="undefined"&&output instanceof ReadableStream
+    ?output:(output?.audio??output?.data??output);
+  if(typeof Response!=="undefined"&&audio instanceof Response)
+    return new Uint8Array(await audio.arrayBuffer());
+  if(typeof ReadableStream!=="undefined"&&audio instanceof ReadableStream)
+    return new Uint8Array(await new Response(audio).arrayBuffer());
+  if(audio instanceof ArrayBuffer)return new Uint8Array(audio);
+  if(ArrayBuffer.isView(audio))return new Uint8Array(audio.buffer,audio.byteOffset,audio.byteLength);
+  if(typeof audio==="string"){
+    const encoded=audio.replace(/^data:audio[^;]*;base64,/i,"");
+    const binary=atob(encoded),bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    return bytes;
+  }
+  return new Uint8Array();
+}
+
+function encodeBase64(bytes) {
+  let binary="";
+  for(let offset=0;offset<bytes.length;offset+=0x8000)
+    binary+=String.fromCharCode(...bytes.subarray(offset,Math.min(offset+0x8000,bytes.length)));
+  return btoa(binary);
+}
 
 export async function onRequestGet({request,env}) {
   const token=(request.headers.get("authorization")||"").startsWith("Bearer ");
@@ -273,6 +299,37 @@ export async function onRequestPost({request,env}) {
       const queueAuthResult=await queueAuth(request,env);
       if(queueAuthResult.error)return queueAuthResult.error;
       return await createVideoJob(request,env,body,queueAuthResult);
+    }
+
+    if(body.action==="generate_speech_batch"){
+      if(!env.AI) return json({ok:false,error:"ai_binding_missing",message:"Falta el binding Workers AI llamado AI. No se activará ningún proveedor de pago."},503);
+      const speechAuth=await queueAuth(request,env);
+      if(speechAuth.error)return speechAuth.error;
+      const rows=Array.isArray(body.dialogues)?body.dialogues:[];
+      if(!rows.length||rows.length>160)
+        return json({ok:false,error:"invalid_speech_batch",message:"El lote debe contener entre 1 y 160 intervenciones."},400);
+      const dialogues=rows.map((row,index)=>({
+        index:Number.isInteger(Number(row?.index))?Number(row.index):index,
+        segmentId:String(row?.segmentId??"").slice(0,80),
+        text:typeof row?.text==="string"?row.text.trim():"",
+        speaker:typeof row?.speaker==="string"?row.speaker.toLowerCase():"alvaro"
+      }));
+      const totalCharacters=dialogues.reduce((sum,row)=>sum+row.text.length,0);
+      if(dialogues.some(row=>!row.text||row.text.length>MAX_SPEECH_TEXT||!SPEAKERS.has(row.speaker)))
+        return json({ok:false,error:"invalid_speech_batch_item",message:"Cada intervención debe tener texto de hasta 1,200 caracteres y una voz española disponible."},400);
+      if(totalCharacters>MAX_SPEECH_BATCH_CHARS)
+        return json({ok:false,error:"speech_batch_too_large",message:"Para mantener la voz dentro de la asignación gratuita diaria, el lote no puede superar 3,500 caracteres. Divide la película en partes."},413);
+      const speechQuota=await reserveFreeAiQuota(speechAuth,"speech");
+      if(!speechQuota)return json({ok:false,error:"free_quota_exhausted",message:"Se alcanzó el límite interno gratuito diario de voz. El lote se detuvo sin recurrir a servicios de pago."},429);
+      const audio=[];
+      for(const item of dialogues){
+        const output=await env.AI.run(SPEECH_MODEL,{text:item.text,speaker:item.speaker,encoding:"mp3"});
+        const bytes=await speechOutputBytes(output);
+        if(!bytes.length)
+          return json({ok:false,error:"empty_speech_response",message:"El motor de voz devolvió audio vacío en la intervención "+(item.index+1)+". No se intentó usar un proveedor de pago."},502);
+        audio.push({segmentId:item.segmentId,index:item.index,audio:encodeBase64(bytes)});
+      }
+      return json({ok:true,audio,characters:totalCharacters,requestCount:audio.length,billing:"workers-ai-free-allocation-only"});
     }
 
     if(body.action==="generate_speech"){
