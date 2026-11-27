@@ -549,18 +549,25 @@
 
 
   const voicePreviewSamples = [
-    {id:"kiyoshima",name:"Kiyoshima",voice:"sirio",label:"Voz masculina adulta · barítono mexicano, grave y sereno",text:"Hermanos, escúchenme. No va a ser fácil conseguir ese automóvil, pero si trabajamos juntos, lo vamos a lograr."},
-    {id:"kashymoto",name:"Kashymoto",voice:"aquila",label:"Voz masculina · latinoamericana, expresiva y enérgica",text:"¡Eso es! Yo estoy listo desde ahora. Denme una oportunidad y van a ver de lo que somos capaces."},
-    {id:"keriko",name:"Keriko",voice:"javier",label:"Voz masculina mexicana · amable, calmada y reflexiva",text:"Esperen un momento. Primero hagamos las cuentas y organicemos el plan. Así tendremos más posibilidades de conseguirlo."}
+    {id:"kiyoshima",name:"Voz masculina 1 · Sirio",voice:"sirio",label:"Masculina · grave, serena y firme",text:"Hermanos, escúchenme. No va a ser fácil conseguir ese automóvil, pero si trabajamos juntos, lo vamos a lograr."},
+    {id:"kashymoto",name:"Voz masculina 2 · Aquila",voice:"aquila",label:"Masculina · juvenil, expresiva y enérgica",text:"¡Eso es! Yo estoy listo desde ahora. Denme una oportunidad y van a ver de lo que somos capaces."},
+    {id:"keriko",name:"Voz masculina 3 · Javier",voice:"javier",label:"Masculina · amable, calmada y reflexiva",text:"Esperen un momento. Primero hagamos las cuentas y organicemos el plan. Así tendremos más posibilidades de conseguirlo."},
+    {id:"male-nestor",name:"Voz masculina 4 · Néstor",voice:"nestor",label:"Masculina · tono adulto y conversacional",text:"La carrera comienza al amanecer. Revisemos el motor, preparemos las herramientas y salgamos con tiempo."},
+    {id:"male-alvaro",name:"Voz masculina 5 · Álvaro",voice:"alvaro",label:"Masculina · tono claro y decidido",text:"No pienso rendirme ahora. Hemos avanzado demasiado para dejar nuestro sueño a mitad del camino."},
+    {id:"female-carina",name:"Voz femenina 1 · Carina",voice:"carina",label:"Femenina · tono cálido y cercano",text:"Me alegra que hayan venido. Sé que han trabajado mucho y quiero ayudarlos a conseguir esa oportunidad."},
+    {id:"female-celeste",name:"Voz femenina 2 · Celeste",voice:"celeste",label:"Femenina · tono claro y sereno",text:"Antes de tomar una decisión, necesitamos conocer los riesgos y pensar con calma en lo que puede ocurrir."},
+    {id:"female-diana",name:"Voz femenina 3 · Diana",voice:"diana",label:"Femenina · tono firme y seguro",text:"Si de verdad quieren competir, tendrán que demostrar disciplina, constancia y confianza en su equipo."},
+    {id:"female-selena",name:"Voz femenina 4 · Selena",voice:"selena",label:"Femenina · tono expresivo y amable",text:"¡Qué emoción! Nunca había visto a alguien prepararse con tantas ganas para una carrera tan importante."},
+    {id:"female-estrella",name:"Voz femenina 5 · Estrella",voice:"estrella",label:"Femenina · tono suave y reflexivo",text:"A veces el camino parece difícil, pero cada pequeño esfuerzo nos acerca un poco más a lo que soñamos."}
   ];
   async function generateVoicePreviews() {
     const button=$("voice-preview-generate");
     const root=$("voice-preview-results");
     try {
       button.disabled=true;
-      button.textContent="Generando las tres muestras…";
+      button.textContent="Generando las diez muestras…";
       root.replaceChildren();
-      message("voice-preview-message","Solicitando tres voces distintas al motor Deepgram Aura-2 en español. Se procesan juntas en una sola solicitud gratuita; no se publican ni se guardan en producción.");
+      message("voice-preview-message","Solicitando diez voces distintas al motor Deepgram Aura-2 en español. Se procesan juntas en un solo lote; no se publican ni se guardan en producción.");
       const {data:{session},error}=await client().auth.getSession();
       if(error)throw error;
       if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
@@ -589,12 +596,12 @@
         const player=document.createElement("audio");player.controls=true;player.preload="metadata";player.src=url;player.style.cssText="display:block;width:100%;margin-top:10px";
         card.append(title,label,dialogue,player);root.append(card);
       }
-      message("voice-preview-message","Las tres muestras reales están listas. Reprodúcelas aquí y decide si las apruebas. No se han subido a producción.");
+      message("voice-preview-message","Las diez muestras reales están listas. Reprodúcelas y decide cuáles apruebas. Ninguna se ha asignado a personajes ni se ha subido a producción.");
     }catch(error){
       message("voice-preview-message",error.message,true);
     }finally{
       button.disabled=false;
-      button.textContent="Generar las 3 muestras de voz";
+      button.textContent="Generar las 10 muestras de voz";
     }
   }
 
