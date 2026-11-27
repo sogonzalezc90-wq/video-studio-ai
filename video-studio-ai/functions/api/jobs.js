@@ -343,7 +343,7 @@ export async function onRequestPost({request,env}) {
       const reserved=await reserveAzureSpeechCharacters(speechAuth,characters+180);
       if(!reserved)return json({ok:false,error:"azure_monthly_free_quota_exhausted",message:"Se alcanzó el tope preventivo mensual de 450,000 caracteres de Azure Speech F0. No se intentó ningún servicio de pago."},429);
       const bytes=await synthesizeAzureSpeech(text,voice,env);
-      return new Response(bytes,{status:200,headers:{"content-type":"audio/mpeg","cache-control":"no-store","x-vsa-model":"Azure Speech F0","x-vsa-billing":"azure-speech-f0-only"});
+      return new Response(bytes,{status:200,headers:{"content-type":"audio/mpeg","cache-control":"no-store","x-vsa-model":"Azure Speech F0","x-vsa-billing":"azure-speech-f0-only"}});
     }
     if(body.action!=="generate_image")
       return json({ok:false,error:"invalid_action",message:"La acción solicitada no está disponible."},400);
