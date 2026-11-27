@@ -174,7 +174,7 @@ test("recognizes screenplay dialogue with em dash and narrated quotation forms",
 });
 
 test("exposes the current audio engine version", () => {
-  assert.equal(engine.audioVersion, "20261127-natural1");
+  assert.equal(engine.audioVersion, "20261127-natural2");
 });
 
 test("short-video engine loads recorded ambience and does not synthesize environmental noise", () => {
@@ -184,7 +184,7 @@ test("short-video engine loads recorded ambience and does not synthesize environ
   assert.match(source, /await window\.VSANaturalAudio\.load/);
   assert.match(source, /natural\.play\(master,cue,when,len,ambienceLevel\)/);
   assert.match(source, /compressor\.threshold\.value=-12/);
-  assert.match(source, /audioVersion:"20261127-natural1"/);
+  assert.match(source, /audioVersion:"20261127-natural2"/);
   assert.doesNotMatch(source, /if\(s\.types\.includes\("rain"\)\)noise/);
 });
 
