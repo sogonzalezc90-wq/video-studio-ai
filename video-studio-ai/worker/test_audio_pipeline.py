@@ -3,6 +3,9 @@ import pathlib
 import shutil
 import tempfile
 import unittest
+import subprocess
+import json
+from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import audio_pipeline as audio
@@ -50,6 +53,38 @@ class AudioPipelineTests(unittest.TestCase):
         self.assertIn("gunshot", audio._effects("Se escucha un disparo en el pasillo"))
         self.assertIn("phone", audio._effects("Suena el teléfono celular"))
         self.assertIn("glass", audio._effects("Se rompe el cristal de la ventana"))
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
+    def test_speechify_audio_is_used_without_loading_piper(self):
+        with tempfile.TemporaryDirectory() as folder:
+            speech = pathlib.Path(folder) / "approved_speechify.mp3"
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=0.8",
+                "-q:a", "5", str(speech)
+            ], check=True, capture_output=True)
+            script = {
+                "dialogues": [{
+                    "speaker": "Personaje A",
+                    "text": "Esta es la voz aprobada para ambos motores.",
+                    "voice": "geffen_32",
+                    "time_seconds": 0.2,
+                    "audio_path": str(speech),
+                }],
+                "effects": [],
+            }
+            with patch.object(audio, "_ensure_models", side_effect=AssertionError("Piper must not load for Speechify audio")):
+                output = audio.build_audio_track(
+                    "ESCENA 1: INT. TALLER - DÍA\nDos personajes conversan.",
+                    2.0, folder, script, voice_choice="none"
+                )
+            self.assertTrue(output.is_file())
+            manifest = json.loads(
+                (pathlib.Path(folder) / "audio_scene_manifest.json").read_text(encoding="utf-8")
+            )
+            recorded = [line for scene in manifest for line in scene["dialogues"]]
+            self.assertEqual(len(recorded), 1)
+            self.assertEqual(recorded[0]["voice"], "geffen_32")
+            self.assertEqual(recorded[0]["provider"], "speechify")
 
     def test_dialogue_without_attribution_is_not_invented(self):
         text = "La cámara muestra un automóvil rojo recorriendo una carretera al atardecer."
