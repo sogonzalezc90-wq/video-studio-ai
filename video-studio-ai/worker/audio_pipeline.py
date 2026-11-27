@@ -290,28 +290,33 @@ def _duration(path):
     return float(result.stdout.strip())
 
 def _write_music(mood, duration, target):
-    chords = {
+    """Render a soft, changing plucked score instead of a continuous sine-wave drone."""
+    scales = {
         "warm": (220, 261.63, 329.63, 392),
-        "sad": (220, 261.63, 329.63, 392),
-        "suspense": (110, 130.81, 155.56, 207.65),
-        "action": (73.42, 110, 146.83, 220),
+        "sad": (220, 261.63, 311.13, 392),
+        "suspense": (146.83, 174.61, 220, 293.66),
+        "action": (196, 246.94, 293.66, 392),
         "neutral": (164.81, 196, 246.94, 293.66),
-        "romantic": (261.63, 329.63, 392.00, 523.25),
-        "comedy": (293.66, 369.99, 440.00, 587.33),
+        "romantic": (261.63, 329.63, 392, 523.25),
+        "comedy": (293.66, 369.99, 440, 587.33),
         "adventure": (146.83, 196.00, 220.00, 293.66),
-    }[mood]
-    if mood == "sad":
-        chords = (220, 261.63, 311.13, 392)
-    freq = "+".join(f"{amp:.4f}*sin(2*PI*{hz:.2f}*t)" for amp, hz in zip((0.035, 0.022, 0.016, 0.010), chords))
-    if mood == "action":
-        freq += "+0.018*sin(2*PI*55*t)*abs(sin(2*PI*1.6*t))"
-    elif mood == "suspense":
-        freq += "+0.012*sin(2*PI*(48+3*sin(2*PI*0.12*t))*t)"
-    elif mood == "warm":
-        freq += "+0.008*sin(2*PI*440*t)"
-    source = f"aevalsrc={freq}:s=48000:d={duration}"
+    }
+    notes = scales[mood]
+    # Escape commas for FFmpeg's filter-expression parser. Each 1.2-second
+    # arpeggio note has a short decay and a quiet octave partial.
+    frequency = (
+        f"if(eq(mod(floor(t/1.2)\\,4)\\,0)\\,{notes[0]}\\,"
+        f"if(eq(mod(floor(t/1.2)\\,4)\\,1)\\,{notes[1]}\\,"
+        f"if(eq(mod(floor(t/1.2)\\,4)\\,2)\\,{notes[2]}\\,{notes[3]})))"
+    )
+    phase = "mod(t\\,1.2)"
+    source = (
+        f"aevalsrc=0.13*exp(-4.2*{phase})*sin(2*PI*({frequency})*t)"
+        f"+0.035*exp(-6.5*{phase})*sin(2*PI*({frequency})*2*t):s=48000:d={duration}"
+    )
     _run(["ffmpeg", "-y", "-f", "lavfi", "-i", source,
-          "-af", f"lowpass=f=2500,afade=t=in:d=1.5,afade=t=out:st={max(0,duration-2)}:d=2,volume=0.48",
+          "-af", f"highpass=f=95,lowpass=f=4200,afade=t=in:d=1.2,"
+          f"afade=t=out:st={max(0,duration-2)}:d=2,volume=0.72",
           "-t", duration, "-ar", 48000, "-ac", 2, target])
 
 def _write_ambience(names, duration, target):
