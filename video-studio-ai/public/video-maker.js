@@ -168,7 +168,7 @@
         if(!hasDialogue)setMessage("No se detectaron líneas de diálogo. Este clip tendrá música y efectos, pero no voz hablada. Para incluir voces, escribe las intervenciones como: Personaje: texto.");
         if(!window.VSASceneEngine?.buildAudio)
           throw new Error("El motor de sonido no está disponible. Actualiza la página con Ctrl+F5; no se generará un video con zumbido de sustitución.");
-        stopAudio=window.VSASceneEngine.buildAudio(audioContext,destination,duration,analysis);
+        stopAudio=await window.VSASceneEngine.buildAudio(audioContext,destination,duration,analysis);
         if(analysis.hasDialogue) stopVoices=await loadDialogueVoices(audioContext,destination,analysis,duration);
         destination.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
       }
