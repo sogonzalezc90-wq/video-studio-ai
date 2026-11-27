@@ -11,65 +11,12 @@
     gain.gain.setValueAtTime(volume,when+duration*.7);gain.gain.linearRampToValueAtTime(.0001,when+duration);
     osc.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
-  function cueNoise(ctx,dest,when,duration,volume=.004,frequency=1000){
-    if(duration<=.05)return;
-    const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*duration),ctx.sampleRate),data=buffer.getChannelData(0);
-    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,peak=0;
-    for(let i=0;i<data.length;i++){
-      const white=Math.random()*2-1;
-      b0=.99886*b0+white*.0555179;b1=.99332*b1+white*.0750759;
-      b2=.969*b2+white*.153852;b3=.8665*b3+white*.3104856;
-      b4=.55*b4+white*.5329522;b5=-.7616*b5-white*.016898;
-      const pink=(b0+b1+b2+b3+b4+b5+b6+white*.5362)*.11;
-      b6=white*.115926;data[i]=pink;peak=Math.max(peak,Math.abs(pink));
-    }
-    const scale=peak>.0001?.72/peak:1;
-    for(let i=0;i<data.length;i++)data[i]*=scale;
-    const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
-    source.buffer=buffer;filter.type="lowpass";filter.frequency.value=frequency;
-    highpass.type="highpass";highpass.frequency.value=frequency<900?65:140;
-    lfo.type="sine";lfo.frequency.value=frequency<900?.12:.22;depth.gain.value=volume*.18;
-    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+Math.min(1.1,duration*.18));
-    gain.gain.setValueAtTime(volume,when+duration*.72);gain.gain.linearRampToValueAtTime(.0001,when+duration);
-    lfo.connect(depth);depth.connect(gain.gain);
-    source.connect(highpass);highpass.connect(filter);filter.connect(gain);gain.connect(dest);
-    source.start(when);source.stop(when+duration);lfo.start(when);lfo.stop(when+duration);
-  }
   function cueMusicPluck(ctx,dest,when,frequency,duration,volume=.025){
     const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
     osc.type="triangle";osc.frequency.setValueAtTime(frequency,when);
     filter.type="lowpass";filter.frequency.value=2400;filter.Q.value=.55;
     gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.018);
     gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
-    osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
-  }
-  function cueMurmur(ctx,dest,when,duration,volume=.0035){
-    [{f:125,formant:520},{f:168,formant:1050},{f:205,formant:1580}].forEach((v,i)=>{
-      const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
-      osc.type="sawtooth";osc.frequency.value=v.f+(Math.random()*10-5);
-      filter.type="bandpass";filter.frequency.value=v.formant;filter.Q.value=1.1;
-      gain.gain.value=volume*.4;lfo.frequency.value=.65+i*.21;depth.gain.value=volume*.4;
-      lfo.connect(depth);depth.connect(gain.gain);osc.connect(filter);filter.connect(gain);gain.connect(dest);
-      osc.start(when);lfo.start(when);osc.stop(when+duration);lfo.stop(when+duration);
-    });
-  }
-  function cueBirds(ctx,dest,when,duration){
-    for(let t=.3;t<duration;t+=1.5+Math.random()){
-      const at=when+t,osc=ctx.createOscillator(),gain=ctx.createGain();
-      osc.type="sine";osc.frequency.setValueAtTime(1850+Math.random()*400,at);
-      osc.frequency.exponentialRampToValueAtTime(2900+Math.random()*500,at+.13);
-      osc.frequency.exponentialRampToValueAtTime(1600,at+.29);
-      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.008,at+.04);gain.gain.exponentialRampToValueAtTime(.0001,at+.3);
-      osc.connect(gain);gain.connect(dest);osc.start(at);osc.stop(at+.31);
-    }
-  }
-  function cueEngine(ctx,dest,when,duration){
-    const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
-    osc.type="sawtooth";osc.frequency.setValueAtTime(62,when);osc.frequency.exponentialRampToValueAtTime(175,when+duration*.55);
-    osc.frequency.exponentialRampToValueAtTime(78,when+duration);
-    filter.type="lowpass";filter.frequency.value=520;
-    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(.026,when+.45);
-    gain.gain.setValueAtTime(.026,when+duration*.55);gain.gain.linearRampToValueAtTime(.0001,when+duration);
     osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
   async function getDialogueBuffers(manifest,status){
