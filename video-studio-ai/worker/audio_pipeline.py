@@ -9,9 +9,11 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 import urllib.request
 
-ROOT = pathlib.Path("/kaggle/working/video_studio_audio")
+WORK_ROOT = pathlib.Path("/kaggle/working")
+ROOT = (WORK_ROOT if WORK_ROOT.exists() else pathlib.Path(tempfile.gettempdir())) / "video_studio_audio"
 VOICE_DIR = ROOT / "voices"
 VOICE_SPECS = {
     "claude": {
