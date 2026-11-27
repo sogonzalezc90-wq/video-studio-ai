@@ -144,6 +144,9 @@ class AudioPipelineTests(unittest.TestCase):
         self.assertIn('music_gain = "0.38" if has_scene_dialogue else "0.55"', source)
         self.assertIn('ambience_gain = "0.48" if has_scene_dialogue else "0.68"', source)
         self.assertIn("0.52*exp(-4.2", source)
+        self.assertIn("fade = min(0.08", source)
+        self.assertIn("scene_fade = min(0.04", source)
+        self.assertNotIn("afade=t=in:d=1.2", source)
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
     def test_final_audio_is_rendered_with_audible_normalized_level(self):
