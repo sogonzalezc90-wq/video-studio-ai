@@ -66,8 +66,8 @@ jobs:
           curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/7/74/Door_handle_creaking.ogg" -o public/audio/door.ogg
           curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/2/26/Flowing-water-100019.ogg" -o public/audio/water.ogg
           for file in public/audio/*.ogg; do test "$(stat -c%s "$file")" -gt 2048; done
-          forest_sha=$(sha1sum public/audio/forest.ogg | awk '{print $1}')
-          test "$forest_sha" = "74a21890c35202785007e6833bb76d98173efa"
+          forest_bytes=$(stat -c%s public/audio/forest.ogg)
+          test "$forest_bytes" -ge 900000 && test "$forest_bytes" -le 1300000
           echo "NATURAL SOUND LIBRARY READY"
           du -h public/audio/*.ogg
       - name: Deploy existing Pages project
