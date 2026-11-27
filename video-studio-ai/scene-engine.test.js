@@ -158,3 +158,21 @@ test("recognizes animal, medical, shopping, kitchen and transport sound actions"
   const cues = result.scenes.flatMap(scene => engine.buildProductionPlan({scenes:[scene],globalInstructions:""},15,15).segments[0].audioCues);
   ["animales","aves","equipo_medico","alarma","caja_registradora","carritos_compras","cocina","aeropuerto","tren_metro"].forEach(cue => assert.ok(cues.includes(cue), cue + " debe estar disponible"));
 });
+
+
+test("recognizes screenplay dialogue with em dash and narrated quotation forms", () => {
+  const result = engine.analyze([
+    "ESCENA 1 — CONVERSACIÓN",
+    "TOMA 1.1 — Los hermanos hablan",
+    "— Kiyoshima — «Tenemos que trabajar juntos.»",
+    "Kashymoto dice: «¡Yo me encargo!»"
+  ].join("\n"));
+  assert.equal(result.hasDialogue, true);
+  assert.equal(result.scenes[0].dialogues.length, 2);
+  assert.equal(result.scenes[0].dialogues[0].character, "Kiyoshima");
+  assert.equal(result.scenes[0].dialogues[1].character, "Kashymoto");
+});
+
+test("exposes the current audio engine version", () => {
+  assert.equal(engine.audioVersion, "20261127-audio4");
+});
