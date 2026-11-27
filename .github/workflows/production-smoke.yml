@@ -17,88 +17,55 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Wait for Cloudflare Pages and verify contextual audio deployment
+      - name: Verify deployed audio engines and speech pipeline
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
           ASSET_VERSION: "20261127-audio4"
         run: |
           set -euo pipefail
+          has() { grep -Fq -- "$1" <<< "$2"; }
           for attempt in $(seq 1 24); do
-            if html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=$ASSET_VERSION"); then
-              if ! grep -q "/scene-engine.js?v=$ASSET_VERSION" <<< "$html"; then
-                echo "Attempt $attempt/24: waiting for the latest production asset version"
-              elif scene=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION"); then
-                if grep -q 'audioVersion:"20261127-audio4"' <<< "$scene" \\
-                  && grep -q 'function addMurmur' <<< "$scene" \\
-                  && grep -q 'function addBirdChirps' <<< "$scene" \\
-                  && grep -q 'function addEngineRev' <<< "$scene" \\
-                  && grep -q 'addBirdChirps' <<< "$scene" \
-                  && grep -q 'ambiente_zoologico' <<< "$scene" \
-                  && grep -q 'ambiente_consultorio' <<< "$scene" \
-                  && grep -q 'ambiente_mercado' <<< "$scene" \
-                  && grep -q 'ambiente_plaza_comercial' <<< "$scene" \
-                  && grep -q 'ambiente_restaurante' <<< "$scene" \
-                  && grep -q 'ambiente_autodromo' <<< "$scene" \
-                  && grep -q 'ambiente_calle' <<< "$scene" \
-                  && grep -q 'ambiente_biblioteca' <<< "$scene" \
-                  && grep -q 'ambiente_escuela' <<< "$scene" \
-                  && grep -q 'ambiente_museo' <<< "$scene" \
-                  && grep -q 'ambiente_hotel' <<< "$scene" \
-                  && grep -q 'ambiente_iglesia' <<< "$scene" \
-                  && grep -q 'ambiente_parque' <<< "$scene" \
-                  && grep -q 'ambiente_piscina' <<< "$scene" \
-                  && grep -q 'ambiente_autobus' <<< "$scene" \
-                  && grep -q 'ambiente_construccion' <<< "$scene" \
-                  && grep -q 'ambiente_teatro' <<< "$scene" \
-                  && grep -q 'ambiente_gimnasio' <<< "$scene"; then
-                  renderer=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
-                  if grep -q 'cueMurmur' <<< "$renderer" \
-                    && grep -q 'limiter.threshold.value=-22' <<< "$renderer" \\
-                    && grep -q 'ambiente_zoologico' <<< "$renderer" \
-                    && grep -q 'equipo_medico' <<< "$renderer" \
-                    && grep -q 'caja_registradora' <<< "$renderer" \
-                    && grep -q 'ambiente_biblioteca' <<< "$renderer" \
-                    && grep -q 'ambiente_escuela' <<< "$renderer" \
-                    && grep -q 'ambiente_museo' <<< "$renderer" \
-                    && grep -q 'ambiente_hotel' <<< "$renderer" \
-                    && grep -q 'ambiente_iglesia' <<< "$renderer" \
-                    && grep -q 'ambiente_parque' <<< "$renderer" \
-                    && grep -q 'ambiente_piscina' <<< "$renderer" \
-                    && grep -q 'ambiente_autobus' <<< "$renderer" \
-                    && grep -q 'ambiente_construccion' <<< "$renderer" \
-                    && grep -q 'ambiente_teatro' <<< "$renderer" \
-                    && grep -q 'ambiente_gimnasio' <<< "$renderer" \
-                    && grep -q 'paginas' <<< "$renderer" \
-                    && grep -q 'campanas_iglesia' <<< "$renderer" \
-                    && grep -q 'elevador' <<< "$renderer"; then
-                    maker=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/video-maker.js?v=$ASSET_VERSION")
-                    if grep -q 'voiceCompressor' <<< "$maker" \
-                      && grep -q 'voiceGain.gain.value' <<< "$maker" \
-                      && grep -q 'source.playbackRate.value=1' <<< "$maker" \
-                      && grep -q 'source.start(context.currentTime+1.1)' <<< "$maker"; then
-                      api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
-                      if grep -q 'free-allocation-only-no-provider-fallback' <<< "$api"; then
-                        echo "PRODUCTION AUDIO VERIFIED"
-                        echo "Cloudflare serves the contextual soundscapes, normalized Spanish dialogue, and free-only API policy."
-                        exit 0
-                      fi
-                      echo "Attempt $attempt/24: API policy response is not ready"
-                    else
-                      echo "Attempt $attempt/24: normalized Spanish dialogue renderer is missing"
+            if ! html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=$ASSET_VERSION"); then
+              echo "Attempt $attempt/24: production HTML is not reachable"
+            elif ! has "/scene-engine.js?v=$ASSET_VERSION" "$html"; then
+              echo "Attempt $attempt/24: waiting for production HTML version $ASSET_VERSION"
+            else
+              scene=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION")
+              scene_ok=true
+              for token in 'audioVersion:"20261127-audio4"' 'function addMurmur' 'function addBirdChirps' 'function addEngineRev' 'ambiente_zoologico' 'ambiente_consultorio' 'ambiente_mercado' 'ambiente_plaza_comercial' 'ambiente_restaurante' 'ambiente_autodromo' 'ambiente_calle' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio'; do
+                if ! has "$token" "$scene"; then echo "Missing scene-engine token: $token"; scene_ok=false; fi
+              done
+              if [ "$scene_ok" = true ]; then
+                renderer=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
+                renderer_ok=true
+                for token in 'cueMurmur' 'limiter.threshold.value=-22' 'ambiente_zoologico' 'equipo_medico' 'caja_registradora' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio' 'paginas' 'campanas_iglesia' 'elevador'; do
+                  if ! has "$token" "$renderer"; then echo "Missing film-renderer token: $token"; renderer_ok=false; fi
+                done
+                if [ "$renderer_ok" = true ]; then
+                  maker=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/video-maker.js?v=$ASSET_VERSION")
+                  maker_ok=true
+                  for token in 'voiceCompressor' 'normalizedGain=Math.min(8' 'rms<0.0005' 'source.playbackRate.value=1' 'source.start(context.currentTime+1.1)' 'No se detectaron líneas de diálogo'; do
+                    if ! has "$token" "$maker"; then echo "Missing video-maker token: $token"; maker_ok=false; fi
+                  done
+                  if [ "$maker_ok" = true ]; then
+                    api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
+                    if has 'free-allocation-only-no-provider-fallback' "$api"; then
+                      echo "PRODUCTION AUDIO ASSETS VERIFIED"
+                      echo "Deployed contextual sound engine, improved speech normalization, silent-audio guard, and free-only API policy are present."
+                      exit 0
                     fi
+                    echo "Attempt $attempt/24: free-only API policy response is not ready"
                   else
-                    echo "Attempt $attempt/24: browser sound renderer is missing required context cues"
+                    echo "Attempt $attempt/24: speech renderer checks failed"
                   fi
                 else
-                  echo "Attempt $attempt/24: scene analyzer is missing required location cues"
+                  echo "Attempt $attempt/24: film renderer checks failed"
                 fi
               else
-                echo "Attempt $attempt/24: scene engine is not reachable yet"
+                echo "Attempt $attempt/24: scene engine checks failed"
               fi
-            else
-              echo "Attempt $attempt/24: production HTML is not reachable yet"
             fi
             if [ "$attempt" -lt 24 ]; then sleep 10; fi
           done
-          echo "Production contextual audio verification did not pass."
+          echo "Production audio asset verification did not pass."
           exit 1
