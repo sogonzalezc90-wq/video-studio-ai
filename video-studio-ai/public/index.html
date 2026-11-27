@@ -101,9 +101,9 @@
       <section class="panel future-panel" id="voice-preview-panel">
         <p class="eyebrow">AUDICIÓN DE VOCES · ANTES DE PRODUCCIÓN</p>
         <h3>Escucha y aprueba las voces de tus personajes</h3>
-        <p class="muted">Escucha diez voces de referencia en español: cinco masculinas y cinco femeninas. Incluye las tres voces masculinas actuales, dos masculinas adicionales y cinco femeninas. Son opciones de audición; podrás asignar una voz a cualquier personaje de cualquier historia.</p>
-        <p class="hint">La generación solicita las diez muestras en un solo lote y consume el cupo interno diario de voz. Si el cupo se agota o el servicio limita la solicitud, se mostrará el error; no se recurrirá a proveedores de pago. No se guardan en la biblioteca ni se publican en producción. Si el cupo gratuito ya se utilizó hoy, tendrás que esperar a su restablecimiento.</p>
-        <button id="voice-preview-generate" class="primary" type="button">Generar las 10 muestras de voz</button>
+        <p class="muted">Escucha 15 voces neuronales estándar en español de México (7 masculinas y 8 femeninas). El catálogo puede ampliarse sin limitar la cantidad de personajes de tus historias. Son opciones de audición; podrás asignar una voz aprobada a cualquier personaje.</p>
+        <p class="hint">Motor: Azure Speech F0. Microsoft publica 500,000 caracteres neuronales gratuitos al mes. VIDEO STUDIO AI se detendrá preventivamente en 450,000 caracteres para dejar margen. Cada audición cuenta para ese consumo. Las muestras no se guardan en la biblioteca ni se asignan a personajes sin tu aprobación. Requiere configurar el recurso Azure Speech gratuito F0 y sus credenciales privadas en Cloudflare. No se activa ningún servicio de pago.</p>
+        <button id="voice-preview-generate" class="primary" type="button">Generar las 15 muestras de voz</button>
         <p id="voice-preview-message" class="message" role="status"></p>
         <div id="voice-preview-results" aria-live="polite"></div>
       </section>
@@ -139,7 +139,7 @@
     </section>
     <footer>VIDEO STUDIO AI · Proyecto privado · Versión inicial</footer>
   </main>
-  <script src="/app.js?v=20261127-voicepreview1"></script>
+  <script src="/app.js?v=20261127-azurevoices1"></script>
   <script src="/natural-audio.js?v=20261127-natural2"></script>
   <script src="/scene-engine.js?v=20261127-natural2"></script>
   <script src="/production-engine.js?v=20261127-natural2"></script>
