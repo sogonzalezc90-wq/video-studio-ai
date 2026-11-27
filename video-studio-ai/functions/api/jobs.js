@@ -43,7 +43,7 @@ export async function onRequestGet({request,env}) {
   }
   return json({
     ok:true,
-    policy:{billing:"free-allocation-only-no-provider-fallback",paidFallback:false,model:IMAGE_MODEL,speechModel:SPEECH_MODEL,speechLanguage:"Spanish",dailyAppCaps:{images:30,speech:1},accountPlanRequirement:"Workers Free is required for a guaranteed hard stop at the free allocation; Workers Paid can bill overage."},
+    policy:{billing:"free-allocation-only-no-provider-fallback",paidFallback:false,model:IMAGE_MODEL,speechModel:SPEECH_MODEL,speechLanguage:"Spanish",dailyAppCaps:{images:30,speech:1},speechBatchMaxCharacters:MAX_SPEECH_BATCH_CHARS,speechBatchMaxLines:40,speechBatchRequestsDaily:1,accountPlanRequirement:"Workers Free is required for a guaranteed hard stop at the free allocation; Workers Paid can bill overage."},
     diagnostics:{AI:Boolean(env.AI),SUPABASE_URL:Boolean(env.SUPABASE_URL),SUPABASE_ANON_KEY:Boolean(env.SUPABASE_ANON_KEY)}
   });
 }
