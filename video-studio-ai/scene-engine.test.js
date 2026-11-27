@@ -174,5 +174,5 @@ test("recognizes screenplay dialogue with em dash and narrated quotation forms",
 });
 
 test("exposes the current audio engine version", () => {
-  assert.equal(engine.audioVersion, "20261127-audio4");
+  assert.equal(engine.audioVersion, "20261127-audio5");
 });
