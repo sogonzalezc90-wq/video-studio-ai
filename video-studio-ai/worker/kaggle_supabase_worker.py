@@ -194,6 +194,34 @@ def _scene_for_time(scenes, seconds):
     return scenes[-1]
 
 
+def fetch_speechify_dialogue_audio(job, job_dir, audio_script):
+    """Download private, pre-rendered Speechify dialogue clips for the exact Wan timeline."""
+    if not isinstance(audio_script, dict):
+        return audio_script
+    dialogues = audio_script.get("dialogues") or []
+    if not dialogues:
+        return audio_script
+    user_id = str(job.get("user_id") or "")
+    project_id = str(job.get("project_id") or "")
+    job_id = str(job.get("id") or "")
+    expected_prefix = f"{user_id}/{project_id}/speechify/{job_id}/"
+    speech_dir = pathlib.Path(job_dir) / "speechify_dialogue"
+    speech_dir.mkdir(parents=True, exist_ok=True)
+    for index, line in enumerate(dialogues):
+        storage_path = str(line.get("audio_storage_path") or "")
+        if not storage_path.startswith(expected_prefix):
+            raise RuntimeError("Un archivo de voz Speechify no pertenece a este usuario, proyecto o trabajo.")
+        encoded = "/".join(urllib.parse.quote(part, safe="") for part in storage_path.split("/"))
+        url = f"{SUPABASE_URL}/storage/v1/object/video-assets/{encoded}"
+        response = HTTP.get(url, timeout=180)
+        if not response.ok or len(response.content) < 512:
+            raise RuntimeError(f"No se pudo descargar el diálogo Speechify {index+1} desde Supabase ({response.status_code}).")
+        target = speech_dir / f"dialogue_{index+1:04d}.mp3"
+        target.write_bytes(response.content)
+        line["audio_path"] = str(target)
+    return audio_script
+
+
 def fetch_project_reference_media(job, job_dir):
     """Download saved project images and extract keyframes from saved project videos."""
     project_id = job.get("project_id")
@@ -492,9 +520,10 @@ def make_video(job, job_dir):
     if not video_streams or int(video_streams[0].get("width",0)) != target_w or int(video_streams[0].get("height",0)) != target_h:
         raise RuntimeError("El MP4 final no alcanzó las dimensiones solicitadas.")
     ensure_not_cancelled(job["id"])
+    speech_script = fetch_speechify_dialogue_audio(job,job_dir,payload.get("audio_script"))
     audio_path = build_audio_track(
-        prompt,duration,job_dir,payload.get("audio_script"),
-        voice_choice=str(payload.get("voice") or "female")
+        prompt,duration,job_dir,speech_script,
+        voice_choice=str(payload.get("voice") or "none")
     )
     muxed = job_dir / "VIDEO_STUDIO_AI_with_audio.mp4"
     subprocess.run([
