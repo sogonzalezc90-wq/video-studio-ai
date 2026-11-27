@@ -547,6 +547,57 @@
     }
   }
 
+
+  const voicePreviewSamples = [
+    {id:"kiyoshima",name:"Kiyoshima",voice:"sirio",label:"Voz masculina adulta · barítono mexicano, grave y sereno",text:"Hermanos, escúchenme. No va a ser fácil conseguir ese automóvil, pero si trabajamos juntos, lo vamos a lograr."},
+    {id:"kashymoto",name:"Kashymoto",voice:"aquila",label:"Voz masculina · latinoamericana, expresiva y enérgica",text:"¡Eso es! Yo estoy listo desde ahora. Denme una oportunidad y van a ver de lo que somos capaces."},
+    {id:"keriko",name:"Keriko",voice:"javier",label:"Voz masculina mexicana · amable, calmada y reflexiva",text:"Esperen un momento. Primero hagamos las cuentas y organicemos el plan. Así tendremos más posibilidades de conseguirlo."}
+  ];
+  async function generateVoicePreviews() {
+    const button=$("voice-preview-generate");
+    const root=$("voice-preview-results");
+    try {
+      button.disabled=true;
+      button.textContent="Generando las tres muestras…";
+      root.replaceChildren();
+      message("voice-preview-message","Solicitando tres voces distintas al motor Deepgram Aura-2 en español. Se procesan juntas en una sola solicitud gratuita; no se publican ni se guardan en producción.");
+      const {data:{session},error}=await client().auth.getSession();
+      if(error)throw error;
+      if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
+      const response=await fetch("/api/jobs",{
+        method:"POST",
+        headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
+        body:JSON.stringify({action:"generate_speech_batch",dialogues:voicePreviewSamples.map((sample,index)=>({
+          index,segmentId:sample.id,speaker:sample.voice,text:sample.text
+        }))})
+      });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok||!result.ok)throw new Error(result.message||result.error||"No se pudieron generar las muestras.");
+      const byId=new Map((result.audio||[]).map(item=>[item.segmentId,item.audio]));
+      for(const sample of voicePreviewSamples){
+        const encoded=byId.get(sample.id);
+        if(!encoded)throw new Error("El motor no devolvió la muestra de "+sample.name+".");
+        const binary=atob(encoded),bytes=new Uint8Array(binary.length);
+        for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+        const url=URL.createObjectURL(new Blob([bytes],{type:"audio/mpeg"}));
+        const card=document.createElement("article");
+        card.className="project-card";
+        card.style.cssText="padding:16px;margin:12px 0";
+        const title=document.createElement("h4");title.textContent=sample.name;
+        const label=document.createElement("p");label.className="muted";label.textContent=sample.label+" · Motor: "+sample.voice;
+        const dialogue=document.createElement("p");dialogue.textContent="“"+sample.text+"”";
+        const player=document.createElement("audio");player.controls=true;player.preload="metadata";player.src=url;player.style.cssText="display:block;width:100%;margin-top:10px";
+        card.append(title,label,dialogue,player);root.append(card);
+      }
+      message("voice-preview-message","Las tres muestras reales están listas. Reprodúcelas aquí y decide si las apruebas. No se han subido a producción.");
+    }catch(error){
+      message("voice-preview-message",error.message,true);
+    }finally{
+      button.disabled=false;
+      button.textContent="Generar las 3 muestras de voz";
+    }
+  }
+
   async function submitWanJob() {
     const button=$("wan-queue-submit");
     try{
@@ -593,6 +644,7 @@
   $("refresh-btn").addEventListener("click",loadProjects);
   $("diagnose-btn")?.addEventListener("click",diagnoseConnection);
   $("wan-queue-submit")?.addEventListener("click",submitWanJob);
+  $("voice-preview-generate")?.addEventListener("click",generateVoicePreviews);
   $("wan-queue-refresh")?.addEventListener("click",loadWanJobs);
   $("wan-queue-clear")?.addEventListener("click",clearFinishedWanJobs);
   $("wan-open-kaggle")?.addEventListener("click",()=>{
@@ -653,4 +705,4 @@
     message("auth-message",e.message,true);
   }
 })();
-// Audio deployment verification: synchronized asset version audio3.
+// Voice preview audition: three distinct Spanish Aura-2 samples, approval before production.
