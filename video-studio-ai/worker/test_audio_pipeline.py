@@ -136,6 +136,50 @@ class AudioPipelineTests(unittest.TestCase):
             self.assertGreater(max(levels) - min(levels), 35, "Plucked score must vary rather than remain a constant drone")
             self.assertGreater(sum(1 for x in levels if x > 60), len(levels) // 2)
 
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
+    def test_speech_music_and_ambience_mix_is_loud_without_clipping(self):
+        import json
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            music = root / "music.wav"
+            ambience = root / "ambience.wav"
+            voice = root / "speech_reference.wav"
+            output = root / "mastered_mix.wav"
+            audio._write_music("warm", 6.0, str(music))
+            audio._write_ambience(["cafe"], 6.0, str(ambience))
+            speech_source = (
+                "aevalsrc=0.11*sin(2*PI*(170+12*sin(2*PI*5*t))*t)*abs(sin(2*PI*4.8*t))"
+                "+0.055*sin(2*PI*(720+70*sin(2*PI*4.2*t))*t)*abs(sin(2*PI*4.8*t))"
+                "+0.025*sin(2*PI*(1800+150*sin(2*PI*3.5*t))*t)*abs(sin(2*PI*4.8*t)):s=48000:d=6"
+            )
+            audio._run(["ffmpeg", "-y", "-f", "lavfi", "-i", speech_source,
+                        "-t", "6", "-ar", "48000", "-ac", "2", str(voice)])
+            graph = (
+                "[0:a]volume=0.38[music];"
+                "[1:a]volume=0.48[ambience];"
+                "[2:a]aresample=48000,volume=2.0,"
+                "acompressor=threshold=-22dB:ratio=3.0:attack=4:release=110,"
+                "alimiter=limit=0.92[voice];"
+                "[music][ambience][voice]amix=inputs=3:duration=longest:normalize=0,"
+                "alimiter=limit=0.92,apad,atrim=duration=6,"
+                "loudnorm=I=-14:LRA=9:TP=-1.5[out]"
+            )
+            audio._run(["ffmpeg", "-y", "-i", str(music), "-i", str(ambience),
+                        "-i", str(voice), "-filter_complex", graph,
+                        "-map", "[out]", "-ar", "48000", "-ac", "2", str(output)])
+            measured = audio._run([
+                "ffmpeg", "-hide_banner", "-i", str(output),
+                "-af", "loudnorm=I=-14:LRA=9:TP=-1.5:print_format=json",
+                "-f", "null", "-"
+            ])
+            report = measured.stderr
+            start, end = report.rfind("{"), report.rfind("}")
+            self.assertGreater(end, start, "FFmpeg must return integrated loudness measurements")
+            metrics = json.loads(report[start:end + 1])
+            self.assertGreaterEqual(float(metrics["input_i"]), -16.0)
+            self.assertLessEqual(float(metrics["input_i"]), -12.0)
+            self.assertLessEqual(float(metrics["input_tp"]), -1.5)
+
     def test_voice_mastering_and_final_loudness_contract(self):
         source = pathlib.Path(audio.__file__).read_text(encoding="utf-8")
         self.assertIn('equalizer=f=3200:t=q:w=1.0:g=2.5', source)
