@@ -31,8 +31,8 @@ test("long-film renderer uses real recorded ambience and peak-safe normalized di
 
 test("long-film ambience comes from the recorded sound library rather than synthetic noise",()=>{
  const source=require("node:fs").readFileSync("public/film-renderer.js","utf8");
- assert.match(source,/window\\.VSANaturalAudio\\.load/);
- assert.match(source,/natural\\.play\\(master,cue,segmentStart,duration,level\\)/);
- assert.doesNotMatch(source,/cueNoise\\(audioCtx,master/);
- assert.doesNotMatch(source,/cueMurmur\\(audioCtx,master/);
+ assert.match(source,/window\.VSANaturalAudio\.load/);
+ assert.match(source,/natural\.play\(master,cue,segmentStart,duration,level\)/);
+ assert.doesNotMatch(source,/cueNoise\(audioCtx,master/);
+ assert.doesNotMatch(source,/cueMurmur\(audioCtx,master/);
 });
