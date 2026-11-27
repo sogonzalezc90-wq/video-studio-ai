@@ -190,10 +190,10 @@ test("short-video engine loads recorded ambience and does not synthesize environ
 
 test("natural sound library exposes real recorded files for core scene cues", () => {
   const library = fs.readFileSync("public/natural-audio.js", "utf8");
-  assert.match(library, /rain: "\/audio\/rain\.ogg"/);
-  assert.match(library, /cafe: "\/audio\/cafe\.ogg"/);
-  assert.match(library, /engine: "\/audio\/engine\.ogg"/);
-  assert.match(library, /city: "\/audio\/city\.ogg"/);
-  assert.match(library, /footsteps: "\/audio\/footsteps\.ogg"/);
+  assert.match(library, /rain: "\/audio\/rain\.ogg\?v=20261127-natural2"/);
+  assert.match(library, /cafe: "\/audio\/cafe\.ogg\?v=20261127-natural2"/);
+  assert.match(library, /engine: "\/audio\/engine\.ogg\?v=20261127-natural2"/);
+  assert.match(library, /city: "\/audio\/city\.ogg\?v=20261127-natural2"/);
+  assert.match(library, /footsteps: "\/audio\/footsteps\.ogg\?v=20261127-natural2"/);
   assert.match(library, /decodeAudioData/);
 });
