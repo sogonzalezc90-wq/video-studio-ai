@@ -131,14 +131,14 @@
     const destination=audioCtx.createMediaStreamDestination(),master=audioCtx.createGain(),limiter=audioCtx.createDynamicsCompressor();
     limiter.threshold.value=-10;limiter.knee.value=3;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.18;
     master.gain.value=.88;master.connect(limiter);limiter.connect(destination);
-    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.30:.58;music.connect(master);
+    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.42:.70;music.connect(master);
     // Short plucked notes create a changing score without the continuous low drone that resembled hum.
     const score=[220,261.63,329.63,392,349.23,293.66,261.63,329.63];
     const beat=.46,scoreStart=audioCtx.currentTime+.12;
     for(let t=0,n=0;t<manifest.targetSeconds;t+=beat,n++){
       const root=score[n%score.length];
-      cueMusicPluck(audioCtx,music,scoreStart+t,root,.34,.042);
-      if(n%3===1)cueMusicPluck(audioCtx,music,scoreStart+t+.13,root*2,.22,.011);
+      cueMusicPluck(audioCtx,music,scoreStart+t,root,.34,.11);
+      if(n%3===1)cueMusicPluck(audioCtx,music,scoreStart+t+.13,root*2,.22,.024);
     }
     const canvas=document.createElement("canvas");canvas.width=1280;canvas.height=720;
     const ctx=canvas.getContext("2d",{alpha:false});
@@ -191,16 +191,16 @@
         });
         const cues=segment.audioCues||[];
         cues.forEach(cue=>{
-          if(cue==="lluvia")cueNoise(audioCtx,master,segmentStart,duration,.012,1800);
-          else if(cue==="viento_ambiente")cueNoise(audioCtx,master,segmentStart,duration,.022,520);
+          if(cue==="lluvia")cueNoise(audioCtx,master,segmentStart,duration,.032,4200);
+          else if(cue==="viento_ambiente")cueNoise(audioCtx,master,segmentStart,duration,.035,900);
           else if(cue==="motor_automovil"||cue==="motor_motocicleta"){cueTone(audioCtx,master,segmentStart,65,duration*.8,.045,"sawtooth");cueTone(audioCtx,master,segmentStart+1,125,duration*.7,.026,"sawtooth");}
           else if(cue==="pasos")for(let k=0;k<Math.min(12,Math.floor(duration*1.2));k++)cueTone(audioCtx,master,segmentStart+k*.75,72,.09,.018,"triangle");
           else if(cue==="puerta")cueTone(audioCtx,master,segmentStart+Math.min(1,duration*.2),180,.35,.04,"triangle");
           else if(cue==="impacto")cueNoise(audioCtx,master,segmentStart,.45,.04,500);
           else if(cue==="herramientas_taller")cueNoise(audioCtx,master,segmentStart,duration*.5,.024,3200);
-          else if(cue==="ambiente_cafeteria"){cueMurmur(audioCtx,master,segmentStart,duration,.014);for(let k=0;k<2;k++){const at=segmentStart+.7+k*1.8;cueTone(audioCtx,master,at,1480+k*120,.12,.012,"sine");}}
+          else if(cue==="ambiente_cafeteria"){cueMurmur(audioCtx,master,segmentStart,duration,.024);for(let k=0;k<2;k++){const at=segmentStart+.7+k*1.8;cueTone(audioCtx,master,at,1480+k*120,.12,.012,"sine");}}
           else if(cue==="trafico_calle"){for(let k=0;k<3;k++)cueEngine(audioCtx,master,segmentStart+k*3,duration*.45);}
-          else if(cue==="conversaciones_fondo")cueMurmur(audioCtx,master,segmentStart,duration,.016);
+          else if(cue==="conversaciones_fondo")cueMurmur(audioCtx,master,segmentStart,duration,.026);
           else if(cue==="tazas_vasos"){for(let k=0;k<3;k++){const at=segmentStart+Math.min(duration-.2,.8+k*1.5);cueTone(audioCtx,master,at,1450+k*170,.12,.012,"sine");cueTone(audioCtx,master,at+.04,2100+k*90,.08,.007,"sine");}}
           else if(cue==="risas"){cueTone(audioCtx,master,segmentStart+1.2,520,.18,.006,"triangle");cueTone(audioCtx,master,segmentStart+1.42,650,.18,.005,"triangle");}
           else if(/^ambiente_(zoologico|consultorio|mercado|plaza_comercial|restaurante|cafeteria|autodromo|calle|biblioteca|escuela|museo|hotel|iglesia|parque|piscina|autobus|construccion|teatro|gimnasio)$/.test(cue)){
@@ -229,7 +229,7 @@
           else if(cue==="tren_metro"||cue==="aeropuerto"||cue==="autobus"||cue==="elevador"){cueNoise(audioCtx,master,segmentStart,duration,.014,1000);}
           else if(cue==="construccion"||cue==="gimnasio"){cueNoise(audioCtx,master,segmentStart,duration,.018,4200);}
           else if(cue==="paginas"){cueNoise(audioCtx,master,segmentStart,duration,.006,7200);}
-          else if(cue==="agua"||cue==="fuego"){cueNoise(audioCtx,master,segmentStart,duration,.016,2200);}
+          else if(cue==="agua"||cue==="fuego"){cueNoise(audioCtx,master,segmentStart,duration,.028,2600);}
         });
         if(video.src){await video.play();}
         const endAt=performance.now()+duration*1000;
