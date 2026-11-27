@@ -177,14 +177,16 @@ test("exposes the current audio engine version", () => {
   assert.equal(engine.audioVersion, "20261127-natural1");
 });
 
-test("audio engine uses a plucked score and pink-noise ambience rather than a sustained drone", () => {
+test("short-video engine loads recorded ambience and does not synthesize environmental noise", () => {
   const source = fs.readFileSync("public/scene-engine.js", "utf8");
   assert.match(source, /function addMusicPluck/);
-  assert.match(source, /Pink\/brown-leaning ambience/);
-  assert.match(source, /compressor\.threshold\.value=-12/);
+  assert.match(source, /async function buildAudio/);
+  assert.match(source, /await window\\.VSANaturalAudio\\.load/);
+  assert.match(source, /natural\\.play\\(master,cue,when,len,ambienceLevel\\)/);
+  assert.match(source, /compressor\\.threshold\\.value=-12/);
   assert.match(source, /audioVersion:"20261127-natural1"/);
+  assert.doesNotMatch(source, /if\\(s\\.types\\.includes\\("rain"\\)\\)noise/);
 });
-
 
 test("natural sound library exposes real recorded files for core scene cues", () => {
   const library = fs.readFileSync("public/natural-audio.js", "utf8");
