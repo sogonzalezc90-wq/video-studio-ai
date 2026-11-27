@@ -271,7 +271,7 @@
     const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
     compressor.threshold.value=-12;compressor.knee.value=4;compressor.ratio.value=12;
     compressor.attack.value=.003;compressor.release.value=.24;
-    master.gain.value=.92;music.gain.value=analysis.hasDialogue?.34:.62;
+    master.gain.value=.92;music.gain.value=analysis.hasDialogue?.52:.72;
     music.connect(master);master.connect(compressor);compressor.connect(destination);
     // Plucked, changing arpeggio: no sustained low-frequency chord that can sound like a hum.
     const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
@@ -279,22 +279,22 @@
     const beat=mood==="accion"?.34:.48;
     for(let t=0,n=0;t<duration;t+=beat,n++){
       const at=start+t,root=scale[n%scale.length];
-      addMusicPluck(ctx,music,at,root,.34,mood==="suspenso"?.052:.044);
-      if(n%3===1)addMusicPluck(ctx,music,at+.12,root*2,.22,.012);
+      addMusicPluck(ctx,music,at,root,.34,mood==="suspenso"?.12:.11);
+      if(n%3===1)addMusicPluck(ctx,music,at+.12,root*2,.22,.025);
     }
     const span=duration/Math.max(1,analysis.scenes.length);
     analysis.scenes.forEach((s,i)=>{
       const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
-      if(s.types.includes("car"))addEngineRev(ctx,master,when,len,.075);
+      if(s.types.includes("car"))addEngineRev(ctx,master,when,len,.095);
       if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
-      if(s.types.includes("rain"))noise(ctx,master,when,len,.025,"lowpass",4200);
-      if(s.types.includes("wind"))noise(ctx,master,when,len,.022,"lowpass",900);
+      if(s.types.includes("rain"))noise(ctx,master,when,len,.045,"lowpass",4200);
+      if(s.types.includes("wind"))noise(ctx,master,when,len,.035,"lowpass",900);
       if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,92+(k%2)*22,.12,"triangle",.035,48);
       if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.012,"highpass",2600);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
       if(s.types.includes("impact")){noise(ctx,master,when,.5,.055,"lowpass",650);tone(ctx,master,when,105,.22,"triangle",.035,42);}
-      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.024);addGlassClinks(ctx,master,when,3);}
-      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.026);
+      if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.03);addGlassClinks(ctx,master,when,3);}
+      if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.032);
       if(s.types.includes("cups"))addGlassClinks(ctx,master,when,3);
       if(s.types.includes("laughter")){tone(ctx,master,when+1.1,520,.22,"triangle",.006,690);tone(ctx,master,when+1.38,650,.2,"triangle",.005,790);}
       if(s.types.includes("zoo")||s.types.includes("birds"))addBirdChirps(ctx,master,when,len);
@@ -309,7 +309,7 @@
       if(s.types.includes("water"))noise(ctx,master,when,len,.018,"lowpass",2200);
       if(s.types.includes("dog")||s.types.includes("cat")||s.types.includes("horse")||s.types.includes("animal"))tone(ctx,master,when+Math.min(1,len*.2),260,.22,"triangle",.007,390);
       if(s.types.includes("alarm"))tone(ctx,master,when,880,.45,"sine",.012,660);
-      if(s.dialogues.length){music.gain.setValueAtTime(.12,when);music.gain.setValueAtTime(analysis.hasDialogue?.34:.62,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
+      if(s.dialogues.length){music.gain.setValueAtTime(.18,when);music.gain.setValueAtTime(analysis.hasDialogue?.52:.72,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
       if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
     return ()=>{try{master.disconnect();music.disconnect();compressor.disconnect();}catch(_){}};
