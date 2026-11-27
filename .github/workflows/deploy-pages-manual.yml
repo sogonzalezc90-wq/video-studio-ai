@@ -56,7 +56,7 @@ jobs:
           set -euo pipefail
           mkdir -p public/audio
           curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/3/3d/Rain.ogg" -o public/audio/rain.ogg
-          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/0/0a/20090610_0_ambience.ogg" -o public/audio/forest.ogg
+          curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/7/75/Birdsong_mild_sunny_day.ogg" -o public/audio/forest.ogg
           curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/3/38/Birds_forest.ogg" -o public/audio/birds.ogg
           curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/1/10/Forest_track.ogg" -o public/audio/footsteps.ogg
           curl --fail --location --retry 3 --silent --show-error "https://upload.wikimedia.org/wikipedia/commons/5/54/Cafe_ambiance.ogg" -o public/audio/cafe.ogg
