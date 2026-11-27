@@ -322,12 +322,15 @@ export async function onRequestPost({request,env}) {
       const speechQuota=await reserveFreeAiQuota(speechAuth,"speech");
       if(!speechQuota)return json({ok:false,error:"free_quota_exhausted",message:"Se alcanzó el límite interno gratuito diario de voz. El lote se detuvo sin recurrir a servicios de pago."},429);
       const audio=[];
-      for(const item of dialogues){
-        const output=await env.AI.run(SPEECH_MODEL,{text:item.text,speaker:item.speaker,encoding:"mp3"});
-        const bytes=await speechOutputBytes(output);
-        if(!bytes.length)
-          return json({ok:false,error:"empty_speech_response",message:"El motor de voz devolvió audio vacío en la intervención "+(item.index+1)+". No se intentó usar un proveedor de pago."},502);
-        audio.push({segmentId:item.segmentId,index:item.index,audio:encodeBase64(bytes)});
+      for(let offset=0;offset<dialogues.length;offset+=4){
+        const chunk=dialogues.slice(offset,offset+4);
+        const rendered=await Promise.all(chunk.map(async item=>{
+          const output=await env.AI.run(SPEECH_MODEL,{text:item.text,speaker:item.speaker,encoding:"mp3"});
+          const bytes=await speechOutputBytes(output);
+          if(!bytes.length)throw new Error("El motor de voz devolvió audio vacío en la intervención "+(item.index+1)+".");
+          return {segmentId:item.segmentId,index:item.index,audio:encodeBase64(bytes)};
+        }));
+        audio.push(...rendered);
       }
       return json({ok:true,audio,characters:totalCharacters,requestCount:audio.length,billing:"workers-ai-free-allocation-only"});
     }
