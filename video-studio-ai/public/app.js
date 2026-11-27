@@ -145,7 +145,7 @@
       const apiResponse=await fetch("/api/jobs",{method:"GET",cache:"no-store",headers:{Accept:"application/json"}});
       const apiResult=await apiResponse.json().catch(()=>({}));
       checks.push(apiResponse.ok
-        ?"Cloudflare API: responde"+(apiResult.diagnostics?" · AI="+(apiResult.diagnostics.AI?"sí":"no")+" · Supabase env="+(apiResult.diagnostics.SUPABASE_URL&&apiResult.diagnostics.SUPABASE_ANON_KEY?"sí":"no"):"")
+        ?"Cloudflare API: responde"+(apiResult.diagnostics?" · AI="+(apiResult.diagnostics.AI?"sí":"no")+" · Speechify env="+(apiResult.diagnostics.SPEECHIFY_API_KEY?"sí":"no")+" · Supabase env="+(apiResult.diagnostics.SUPABASE_URL&&apiResult.diagnostics.SUPABASE_ANON_KEY?"sí":"no"):"")
         :"Cloudflare API: HTTP "+apiResponse.status+" — "+(apiResult.message||apiResult.error||"sin detalle"));
       message("project-message",checks.join(" | "),checks.some(item=>item.includes("ERROR")||item.includes("no encontrada")||item.includes("HTTP ")));
     } catch(error) {
@@ -610,7 +610,7 @@
       button.textContent="Consultando catálogo mexicano…";
       root.replaceChildren();
       message("voice-preview-message","Consultando las voces que realmente ofrece tu cuenta para español de México y Simba 3.0. Las muestras del catálogo no consumen caracteres de síntesis.");
-      const voices=await loadSpeechifyVoices(true);
+      const voices=await loadSpeechifyVoices();
       if(!voices.length)throw new Error("Speechify no devolvió voces compatibles con español de México (es-MX) y Simba 3.0.");
       for(const voice of voices){
         const card=document.createElement("article");
