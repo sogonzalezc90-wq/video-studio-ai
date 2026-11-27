@@ -40,4 +40,6 @@ test("film speech batches multiple character voices under one daily free quota r
   assert.match(jobs, /reserveFreeAiQuota\(speechAuth,"speech"\)/);
   assert.match(jobs, /workers-ai-free-allocation-only/);
   assert.match(jobs, /speech_batch_too_large/);
+  assert.match(jobs, /offset\+=4/);
+  assert.match(jobs, /Promise\.all\(chunk\.map/);
 });
