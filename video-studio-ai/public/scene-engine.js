@@ -79,8 +79,8 @@
     if(!value||/^(?:sin diálogo|sin dialogo|no hay diálogo|no hay dialogo)\.?$/i.test(value)) return null;
     // Accept screenplay forms such as "Diálogo: KIYOSHIMA (voz grave): «…»".
     const prefixed=value.match(/^(?:diálogo|dialogo)\s*:\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*:\s*[«“"]?(.+?)[»”"]?$/iu);
-    const direct=value.match(/^([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*:\s*[«“"]?(.+?)[»”"]?$/u);
-    const m=prefixed||direct;
+    const direct=value.match(/^[-–—]?\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*(?::|—|–)\s*[«“"]?(.+?)[»”"]?$/u);
+    const narrated=value.match(/^([\p{L}][\p{L}\p{M} .'-]{1,35}?)\s+(?:dice|responde|pregunta|grita|susurra|contesta|murmura)\s*[:,]?\s*[«“"](.+?)[»”"]$/iu);\n    const m=prefixed||direct||narrated;
     if(!m) return null;
     const character=m[1].trim().replace(/\s+/g," ");
     const text=m[2].trim().replace(/[»”"]+$/,"").replace(/^[«“"]+/,"").trim();
@@ -249,28 +249,28 @@
     const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
     compressor.threshold.value=-24;compressor.knee.value=16;compressor.ratio.value=4.5;
     compressor.attack.value=.003;compressor.release.value=.24;
-    master.gain.value=1.0;music.gain.value=analysis.hasDialogue?.48:.34;
+    master.gain.value=1.12;music.gain.value=analysis.hasDialogue?.28:.56;
     music.connect(master);master.connect(compressor);compressor.connect(destination);
     // Replace the old continuous low-frequency drone (which sounded like a hum)
     // with short, musical notes and a gentle changing arpeggio.
     const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
-    const scale=mood==="suspenso"?[110,130.81,155.56,196]:mood==="accion"?[146.83,174.61,220,293.66]:[196,220,261.63,329.63];
+    const scale=mood==="suspenso"?[146.83,174.61,220,293.66]:mood==="accion"?[196,246.94,293.66,392]:[220,261.63,329.63,392];
     const beat=1.15;
     for(let t=0,n=0;t<duration;t+=beat,n++){
       const at=start+t;
       const root=scale[n%scale.length];
-      tone(ctx,music,at,root,.42,"sine",.055);
-      if(n%2===0)tone(ctx,music,at+.24,root*1.5,.28,"triangle",.026);
-      if(n%4===3)tone(ctx,music,at+.48,root*2,.22,"sine",.018);
+      tone(ctx,music,at,root,.46,"triangle",.12);
+      if(n%2===0)tone(ctx,music,at+.24,root*1.5,.30,"sine",.045);
+      if(n%4===3)tone(ctx,music,at+.48,root*2,.24,"sine",.028);
     }
     const span=duration/Math.max(1,analysis.scenes.length);
     analysis.scenes.forEach((s,i)=>{
       const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
-      if(s.types.includes("car")){tone(ctx,master,when,58,len,"sawtooth",.075,135);tone(ctx,master,when+.3,950,.18,"sine",.025,400);}
+      if(s.types.includes("car"))addEngineRev(ctx,master,when,len,.075);
       if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
-      if(s.types.includes("rain"))noise(ctx,master,when,len,.024,"lowpass",1500);
-      if(s.types.includes("wind"))noise(ctx,master,when,len,.014,"lowpass",300);
-      if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,72+(k%2)*16,.12,"triangle",.025,38);
+      if(s.types.includes("rain"))noise(ctx,master,when,len,.014,"lowpass",1250);
+      if(s.types.includes("wind"))noise(ctx,master,when,len,.009,"lowpass",420);
+      if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,92+(k%2)*22,.12,"triangle",.035,48);
       if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
       if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
