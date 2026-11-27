@@ -174,7 +174,7 @@ test("recognizes screenplay dialogue with em dash and narrated quotation forms",
 });
 
 test("exposes the current audio engine version", () => {
-  assert.equal(engine.audioVersion, "20261127-audio6");
+  assert.equal(engine.audioVersion, "20261127-audio7");
 });
 
 test("audio engine uses a plucked score and pink-noise ambience rather than a sustained drone", () => {
@@ -182,5 +182,5 @@ test("audio engine uses a plucked score and pink-noise ambience rather than a su
   assert.match(source, /function addMusicPluck/);
   assert.match(source, /Pink\/brown-leaning ambience/);
   assert.match(source, /compressor\.threshold\.value=-12/);
-  assert.match(source, /audioVersion:"20261127-audio6"/);
+  assert.match(source, /audioVersion:"20261127-audio7"/);
 });
