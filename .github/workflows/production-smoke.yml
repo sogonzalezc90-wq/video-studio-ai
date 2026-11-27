@@ -51,6 +51,10 @@ jobs:
                 bytes=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/audio/$file.ogg" | wc -c)
                 if [ "$bytes" -lt 2048 ]; then echo "Missing or incomplete deployed audio: $file.ogg"; ok=false; fi
               done
+              forest_sha=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/audio/forest.ogg" | sha1sum | awk '{print $1}')
+              if [ "$forest_sha" != "74a21890c35202785007e6833bb76d98173efa" ]; then
+                echo "Deployed forest ambience is not the verified clean woodland recording"; ok=false
+              fi
               if [ "$ok" = true ]; then
                 api=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/api/jobs")
                 if has 'free-allocation-only-no-provider-fallback' "$api" && has 'speechBatchMaxCharacters' "$api"; then
