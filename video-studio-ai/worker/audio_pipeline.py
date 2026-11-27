@@ -29,6 +29,7 @@ NATURAL_AUDIO_URLS = {
     "rain": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Rain.ogg",
     "forest": "https://upload.wikimedia.org/wikipedia/commons/0/0a/20090610_0_ambience.ogg",
     "birds": "https://upload.wikimedia.org/wikipedia/commons/3/38/Birds_forest.ogg",
+    "footsteps": "https://upload.wikimedia.org/wikipedia/commons/1/10/Forest_track.ogg",
     "cafe": "https://upload.wikimedia.org/wikipedia/commons/5/54/Cafe_ambiance.ogg",
     "city": "https://upload.wikimedia.org/wikipedia/commons/8/88/Sonido_del_centro_de_la_ciudad_a_las_8_de_la_ma%C3%B1ana.ogg",
     "engine": "https://upload.wikimedia.org/wikipedia/commons/9/98/Maserati_GranTurismo_S_Exhaust.ogg",
@@ -38,6 +39,7 @@ NATURAL_AUDIO_URLS = {
 }
 AMBIENCE_ASSETS = {
     "rain": ("rain",), "wind": ("forest",), "forest": ("forest", "birds"),
+    "footsteps": ("footsteps",),
     "race": ("engine",), "engine": ("engine",), "city": ("city",),
     "airport": ("city",), "bus": ("city",), "subway": ("city",),
     "cafe": ("cafe",), "market": ("cafe",), "mall": ("cafe",),
@@ -376,7 +378,7 @@ def _write_ambience(names, duration, target):
     fade_out_start = max(0.0, duration - fade)
     levels = {
         "rain": (80, 9000, 0.58), "forest": (70, 11000, 0.48),
-        "birds": (450, 11000, 0.46), "cafe": (100, 9000, 0.44),
+        "birds": (450, 11000, 0.46), "footsteps": (80, 9000, 0.68), "cafe": (100, 9000, 0.44),
         "city": (55, 11000, 0.48), "engine": (35, 7000, 0.50),
         "workshop": (75, 9000, 0.46), "door": (100, 7500, 0.60),
         "water": (80, 10000, 0.55),
