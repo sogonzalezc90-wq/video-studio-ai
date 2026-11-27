@@ -549,20 +549,7 @@
   }
 
 
-  async function loadSpeechifyVoices(force=false) {
-    if(!force&&Array.isArray(window.VSASpeechifyVoices)&&window.VSASpeechifyVoices.length)return window.VSASpeechifyVoices;
-    const {data:{session},error}=await client().auth.getSession();
-    if(error)throw error;
-    if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
-    const response=await fetch("/api/jobs",{
-      method:"POST",
-      headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
-      body:JSON.stringify({action:"list_speechify_voices"})
-    });
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok||!result.ok)throw new Error(result.message||result.error||"No se pudo consultar el catálogo de voces.");
-    const voices=Array.isArray(result.voices)?result.voices:[];
-    window.VSASpeechifyVoices=voices;
+  function applySpeechifyVoiceState(voices) {
     let approved=[];
     try{approved=JSON.parse(localStorage.getItem("vsa_speechify_approved_voices")||"[]");}catch(_){}
     if(!Array.isArray(approved))approved=[];
@@ -578,6 +565,25 @@
       });
       if(window.VSAApprovedSpeechifyVoices.includes(previous))select.value=previous;
     }
+  }
+  async function loadSpeechifyVoices(force=false) {
+    if(!force&&Array.isArray(window.VSASpeechifyVoices)&&window.VSASpeechifyVoices.length){
+      applySpeechifyVoiceState(window.VSASpeechifyVoices);
+      return window.VSASpeechifyVoices;
+    }
+    const {data:{session},error}=await client().auth.getSession();
+    if(error)throw error;
+    if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
+    const response=await fetch("/api/jobs",{
+      method:"POST",
+      headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
+      body:JSON.stringify({action:"list_speechify_voices"})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw new Error(result.message||result.error||"No se pudo consultar el catálogo de voces.");
+    const voices=Array.isArray(result.voices)?result.voices:[];
+    window.VSASpeechifyVoices=voices;
+    applySpeechifyVoiceState(voices);
     return voices;
   }
   window.VSALoadSpeechifyVoices=loadSpeechifyVoices;
