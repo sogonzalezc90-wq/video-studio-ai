@@ -22,7 +22,10 @@ test("film renderer requests all character dialogue voices in one quota-safe bat
 test("long-film renderer uses real recorded ambience and peak-safe normalized dialogue",()=>{
  const source=require("node:fs").readFileSync("public/film-renderer.js","utf8");
  assert.match(source,/function cueMusicPluck/);
- assert.match(source,/let b0=0,b1=0,b2=0/);
+ assert.doesNotMatch(source,/function cueNoise/);
+ assert.doesNotMatch(source,/function cueMurmur/);
+ assert.doesNotMatch(source,/function cueBirds/);
+ assert.doesNotMatch(source,/function cueEngine/);
  assert.match(source,/peak<\.002/);
  assert.match(source,/limiter\.threshold\.value=-10/);
  assert.match(source,/voiceCompressor\.ratio\.value=4/);
