@@ -12,13 +12,36 @@
     osc.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
   function cueNoise(ctx,dest,when,duration,volume=.004,frequency=1000){
+    if(duration<=.05)return;
     const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*duration),ctx.sampleRate),data=buffer.getChannelData(0);
-    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.35;
-    const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,peak=0;
+    for(let i=0;i<data.length;i++){
+      const white=Math.random()*2-1;
+      b0=.99886*b0+white*.0555179;b1=.99332*b1+white*.0750759;
+      b2=.969*b2+white*.153852;b3=.8665*b3+white*.3104856;
+      b4=.55*b4+white*.5329522;b5=-.7616*b5-white*.016898;
+      const pink=(b0+b1+b2+b3+b4+b5+b6+white*.5362)*.11;
+      b6=white*.115926;data[i]=pink;peak=Math.max(peak,Math.abs(pink));
+    }
+    const scale=peak>.0001?.72/peak:1;
+    for(let i=0;i<data.length;i++)data[i]*=scale;
+    const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
     source.buffer=buffer;filter.type="lowpass";filter.frequency.value=frequency;
-    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+Math.min(.8,duration*.2));
-    gain.gain.setValueAtTime(volume,when+duration*.7);gain.gain.linearRampToValueAtTime(.0001,when+duration);
-    source.connect(filter);filter.connect(gain);gain.connect(dest);source.start(when);source.stop(when+duration);
+    highpass.type="highpass";highpass.frequency.value=frequency<900?65:140;
+    lfo.type="sine";lfo.frequency.value=frequency<900?.12:.22;depth.gain.value=volume*.18;
+    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+Math.min(1.1,duration*.18));
+    gain.gain.setValueAtTime(volume,when+duration*.72);gain.gain.linearRampToValueAtTime(.0001,when+duration);
+    lfo.connect(depth);depth.connect(gain.gain);
+    source.connect(highpass);highpass.connect(filter);filter.connect(gain);gain.connect(dest);
+    source.start(when);source.stop(when+duration);lfo.start(when);lfo.stop(when+duration);
+  }
+  function cueMusicPluck(ctx,dest,when,frequency,duration,volume=.025){
+    const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    osc.type="triangle";osc.frequency.setValueAtTime(frequency,when);
+    filter.type="lowpass";filter.frequency.value=2400;filter.Q.value=.55;
+    gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.018);
+    gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+    osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
   function cueMurmur(ctx,dest,when,duration,volume=.0035){
     [{f:125,formant:520},{f:168,formant:1050},{f:205,formant:1580}].forEach((v,i)=>{
@@ -106,23 +129,16 @@
     const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     await audioCtx.resume();
     const destination=audioCtx.createMediaStreamDestination(),master=audioCtx.createGain(),limiter=audioCtx.createDynamicsCompressor();
-    limiter.threshold.value=-22;limiter.knee.value=14;limiter.ratio.value=4.5;limiter.attack.value=.003;limiter.release.value=.2;
-    master.gain.value=1.0;master.connect(limiter);limiter.connect(destination);
-    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.025:.045;music.connect(master);
-    // A small harmonic bed is deliberately audible in the exported file.
-    const musicOscillators=[];
-    [110,164.81,220,261.63].forEach((frequency,index)=>{
-      const oscillator=audioCtx.createOscillator(),toneGain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
-      oscillator.type=index===0?"triangle":"sine";oscillator.frequency.setValueAtTime(frequency,audioCtx.currentTime);
-      toneGain.gain.value=[.22,.14,.10,.07][index];filter.type="lowpass";filter.frequency.value=1800;
-      oscillator.connect(toneGain);toneGain.connect(filter);filter.connect(music);oscillator.start();
-      musicOscillators.push(oscillator);
-    });
-    // Gentle chord changes prevent the music bed from being a single static note.
-    const chordProgression=[[110,164.81,220,261.63],[98,146.83,196,246.94],[130.81,164.81,196,261.63],[87.31,130.81,174.61,220]];
-    for(let bar=0;bar<Math.ceil(manifest.targetSeconds/8);bar++){
-      const chord=chordProgression[bar%chordProgression.length],at=audioCtx.currentTime+bar*8;
-      musicOscillators.forEach((osc,index)=>osc.frequency.setValueAtTime(chord[index],at));
+    limiter.threshold.value=-10;limiter.knee.value=3;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.18;
+    master.gain.value=.88;master.connect(limiter);limiter.connect(destination);
+    const music=audioCtx.createGain();music.gain.value=dialogueBuffers.size?.30:.58;music.connect(master);
+    // Short plucked notes create a changing score without the continuous low drone that resembled hum.
+    const score=[220,261.63,329.63,392,349.23,293.66,261.63,329.63];
+    const beat=.46,scoreStart=audioCtx.currentTime+.12;
+    for(let t=0,n=0;t<manifest.targetSeconds;t+=beat,n++){
+      const root=score[n%score.length];
+      cueMusicPluck(audioCtx,music,scoreStart+t,root,.34,.042);
+      if(n%3===1)cueMusicPluck(audioCtx,music,scoreStart+t+.13,root*2,.22,.011);
     }
     const canvas=document.createElement("canvas");canvas.width=1280;canvas.height=720;
     const ctx=canvas.getContext("2d",{alpha:false});
@@ -156,13 +172,20 @@
         const segmentStart=audioCtx.currentTime+.08;
         (segment.dialogues||[]).forEach((line,index)=>{
           const buffer=dialogueBuffers.get(segment.id+":"+index);if(!buffer)return;
-          const voice=audioCtx.createBufferSource(),gain=audioCtx.createGain();
+          const voice=audioCtx.createBufferSource(),gain=audioCtx.createGain(),voiceFilter=audioCtx.createBiquadFilter(),voiceCompressor=audioCtx.createDynamicsCompressor();
           voice.buffer=buffer;
-          const samples=buffer.getChannelData(0);let energy=0,stride=Math.max(1,Math.floor(samples.length/8000)),count=0;
-          for(let n=0;n<samples.length;n+=stride){energy+=samples[n]*samples[n];count++;}
+          let energy=0,count=0,peak=0;
+          for(let channel=0;channel<buffer.numberOfChannels;channel++){
+            const samples=buffer.getChannelData(channel),stride=Math.max(1,Math.floor(samples.length/16000));
+            for(let n=0;n<samples.length;n+=stride){const sample=Math.abs(samples[n]);energy+=sample*sample;count++;peak=Math.max(peak,sample);}
+          }
           const rms=Math.sqrt(energy/Math.max(1,count));
-          gain.gain.value=Math.min(5.0,Math.max(1.6,.24/Math.max(.001,rms)));
-          voice.connect(gain);gain.connect(master);
+          if(buffer.duration<.15||rms<.0005||peak<.002)throw new Error("Una voz quedó vacía o casi inaudible; se canceló la exportación para no entregar una película sin diálogo.");
+          gain.gain.value=Math.min(8,.24/Math.max(.0001,rms),.90/Math.max(.0001,peak));
+          voiceFilter.type="highpass";voiceFilter.frequency.value=85;
+          voiceCompressor.threshold.value=-18;voiceCompressor.knee.value=8;voiceCompressor.ratio.value=4;
+          voiceCompressor.attack.value=.003;voiceCompressor.release.value=.16;
+          voice.connect(gain);gain.connect(voiceFilter);voiceFilter.connect(voiceCompressor);voiceCompressor.connect(master);
           const at=Number.isFinite(line.atSeconds)?line.atSeconds:Math.min(duration-.5,.6+(index*duration/Math.max(1,segment.dialogues.length)));
           voice.start(segmentStart+Math.max(0,Math.min(duration-.1,at)));
         });
@@ -233,14 +256,14 @@
       if(preview){preview.src=url;$("video-preview-wrap")?.classList.remove("hidden");}
       if(link){link.href=url;link.download="video-studio-ai-pelicula.webm";link.textContent="Descargar película WebM";}
       window.dispatchEvent(new CustomEvent("vsa-video-created",{detail:{blob,extension:"webm",mime:"video/webm"}}));
-      status.textContent="Película ensamblada: "+segments.length+" segmentos · "+Math.floor(manifest.targetSeconds/60)+" min · WebM. Audio y voces incluidos.";
+      status.textContent="Película ensamblada: "+segments.length+" segmentos · "+Math.floor(manifest.targetSeconds/60)+" min · WebM. Música, ambientes, efectos y voces procesados.";
       return blob;
     }catch(error){
       if(recorder.state!=="inactive"){try{recorder.stop();}catch(_){}}
       throw error;
     }finally{
       stream.getTracks().forEach(track=>track.stop());
-      musicOscillators.forEach(osc=>{try{osc.stop();}catch(_){}});
+      
       await audioCtx.close();
     }
   }
