@@ -403,7 +403,31 @@ def _write_ambience(names, duration, target):
 
 def _write_sfx(names, duration, target):
     inputs, labels = [], []
+    recorded_effects = {
+        "engine": ("engine", True, 0.58),
+        "footsteps": ("footsteps", True, 0.72),
+        "door": ("door", False, 0.72),
+        "tools": ("workshop", True, 0.48),
+        "crowd": ("cafe", True, 0.42),
+        "birds": ("birds", True, 0.52),
+        "water": ("water", True, 0.52),
+        "bus": ("city", True, 0.50),
+        "construction": ("workshop", True, 0.48),
+    }
     for name in names:
+        if name in recorded_effects:
+            asset, should_loop, gain = recorded_effects[name]
+            path = _natural_audio_file(asset)
+            if should_loop:
+                inputs += ["-stream_loop", "-1", "-i", str(path)]
+            else:
+                inputs += ["-i", str(path)]
+            index = len(labels)
+            labels.append(
+                f"[{index}:a]aresample=48000,volume={gain},"
+                f"atrim=duration={duration}[s{index}]"
+            )
+            continue
         if name == "engine":
             src = f"aevalsrc=0.10*sin(2*PI*(58+26*sin(2*PI*0.55*t))*t)*abs(sin(2*PI*0.55*t)):s=48000:d={duration}"
             filt = "lowpass=f=900,afade=t=in:d=0.2,volume=0.65"
