@@ -9,7 +9,7 @@ const MAX_PROMPT=3000;
 const MAX_SPEECH_TEXT=5000;
 const AZURE_SPEECH_VOICES=new Set(["es-MX-DaliaNeural","es-MX-JorgeNeural","es-MX-BeatrizNeural","es-MX-CandelaNeural","es-MX-CarlotaNeural","es-MX-CecilioNeural","es-MX-GerardoNeural","es-MX-LarissaNeural","es-MX-LibertoNeural","es-MX-LucianoNeural","es-MX-MarinaNeural","es-MX-NuriaNeural","es-MX-PelayoNeural","es-MX-RenataNeural","es-MX-YagoNeural"]);
 const LEGACY_VOICE_MAP={sirio:"es-MX-JorgeNeural",nestor:"es-MX-GerardoNeural",carina:"es-MX-DaliaNeural",celeste:"es-MX-BeatrizNeural",alvaro:"es-MX-CecilioNeural",diana:"es-MX-CandelaNeural",aquila:"es-MX-LibertoNeural",selena:"es-MX-LarissaNeural",estrella:"es-MX-RenataNeural",javier:"es-MX-PelayoNeural"};
-const MAX_SPEECH_BATCH_CHARS=20000;
+const MAX_SPEECH_BATCH_CHARS=21000;
 
 async function speechOutputBytes(output) {
   let audio=typeof ReadableStream!=="undefined"&&output instanceof ReadableStream
