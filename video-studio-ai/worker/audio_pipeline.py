@@ -310,13 +310,15 @@ def _write_music(mood, duration, target):
         f"if(eq(mod(floor(t/1.2)\\,4)\\,2)\\,{notes[2]}\\,{notes[3]})))"
     )
     phase = "mod(t\\,1.2)"
+    fade = min(0.08, max(0.01, duration / 5))
+    fade_out_start = max(0.0, duration - fade)
     source = (
         f"aevalsrc=0.52*exp(-4.2*{phase})*sin(2*PI*({frequency})*t)"
         f"+0.11*exp(-6.5*{phase})*sin(2*PI*({frequency})*2*t):s=48000:d={duration}"
     )
     _run(["ffmpeg", "-y", "-f", "lavfi", "-i", source,
-          "-af", f"highpass=f=95,lowpass=f=4200,afade=t=in:d=1.2,"
-          f"afade=t=out:st={max(0,duration-2)}:d=2,volume=0.95",
+          "-af", f"highpass=f=95,lowpass=f=4200,afade=t=in:d={fade:.3f},"
+          f"afade=t=out:st={fade_out_start:.3f}:d={fade:.3f},volume=0.95",
           "-t", duration, "-ar", 48000, "-ac", 2, target])
 
 def _write_ambience(names, duration, target):
@@ -700,9 +702,13 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
                 "scene_offset_seconds": round(event["local_position_seconds"], 3),
                 "duration_seconds": round(event["duration_seconds"], 3)
             })
+        scene_fade = min(0.04, max(0.005, scene_duration / 5))
+        scene_fade_out = max(0.0, scene_duration - scene_fade)
         filters.append("".join(mix_labels) +
                        f"amix=inputs={len(mix_labels)}:duration=longest:normalize=0,"
-                       f"alimiter=limit=0.92,apad,atrim=duration={scene_duration}[out]")
+                       f"alimiter=limit=0.92,apad,atrim=duration={scene_duration},"
+                       f"afade=t=in:d={scene_fade:.3f},"
+                       f"afade=t=out:st={scene_fade_out:.3f}:d={scene_fade:.3f}[out]")
         scene_mix = scene_dir / "scene_mix.wav"
         _run(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(filters),
               "-map", "[out]", "-t", scene_duration, "-ar", 48000, "-ac", 2,
