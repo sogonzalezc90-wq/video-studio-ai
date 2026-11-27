@@ -329,7 +329,7 @@ export async function onRequestPost({request,env}) {
       const dialogues=rows.map((row,index)=>({index:Number.isInteger(Number(row?.index))?Number(row.index):index,segmentId:String(row?.segmentId??"").slice(0,80),text:typeof row?.text==="string"?row.text.trim():"",voice:azureVoice(row?.voice??row?.speaker)}));
       const totalCharacters=dialogues.reduce((sum,row)=>sum+[...row.text].length,0);
       if(dialogues.some(row=>!row.text||[...row.text].length>MAX_SPEECH_TEXT||!row.voice))return json({ok:false,error:"invalid_speech_batch_item",message:"Cada muestra admite hasta 5,000 caracteres y una voz mexicana disponible."},400);
-      if(totalCharacters>MAX_SPEECH_BATCH_CHARS)return json({ok:false,error:"speech_batch_too_large",message:"El lote supera 20,000 caracteres. Divide la narración en partes."},413);
+      if(totalCharacters>MAX_SPEECH_BATCH_CHARS)return json({ok:false,error:"speech_batch_too_large",message:"El lote supera 21,000 caracteres. Divide la narración en partes."},413);
       const reserved=await reserveAzureSpeechCharacters(speechAuth,totalCharacters+dialogues.length*180);
       if(!reserved)return json({ok:false,error:"azure_monthly_free_quota_exhausted",message:"Se alcanzó el tope preventivo mensual de 450,000 caracteres de Azure Speech F0. No se intentó ningún servicio de pago."},429);
       const audio=[];
