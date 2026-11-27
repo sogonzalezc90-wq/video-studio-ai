@@ -311,12 +311,12 @@ def _write_music(mood, duration, target):
     )
     phase = "mod(t\\,1.2)"
     source = (
-        f"aevalsrc=0.13*exp(-4.2*{phase})*sin(2*PI*({frequency})*t)"
-        f"+0.035*exp(-6.5*{phase})*sin(2*PI*({frequency})*2*t):s=48000:d={duration}"
+        f"aevalsrc=0.52*exp(-4.2*{phase})*sin(2*PI*({frequency})*t)"
+        f"+0.11*exp(-6.5*{phase})*sin(2*PI*({frequency})*2*t):s=48000:d={duration}"
     )
     _run(["ffmpeg", "-y", "-f", "lavfi", "-i", source,
           "-af", f"highpass=f=95,lowpass=f=4200,afade=t=in:d=1.2,"
-          f"afade=t=out:st={max(0,duration-2)}:d=2,volume=0.72",
+          f"afade=t=out:st={max(0,duration-2)}:d=2,volume=0.95",
           "-t", duration, "-ar", 48000, "-ac", 2, target])
 
 def _write_ambience(names, duration, target):
@@ -428,13 +428,13 @@ def _write_ambience(names, duration, target):
             continue
         inputs += ["-f", "lavfi", "-i", source]
         idx = len(inputs) // 4 - 1
-        filters.append(f"[{idx}:a]{filt},volume=0.45[a{idx}]")
+        filters.append(f"[{idx}:a]{filt},volume=0.82[a{idx}]")
     if not inputs:
         _run(["ffmpeg", "-y", "-f", "lavfi", "-i",
               f"anullsrc=r=48000:cl=stereo:d={duration}", "-t", duration, target])
         return
     labels = "".join(f"[a{i}]" for i in range(len(filters)))
-    filters.append(f"{labels}amix=inputs={len(filters)}:duration=longest:normalize=0,volume=0.65[out]")
+    filters.append(f"{labels}amix=inputs={len(filters)}:duration=longest:normalize=0,volume=0.88[out]")
     _run(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(filters),
           "-map", "[out]", "-t", duration, "-ar", 48000, "-ac", 2, target])
 
@@ -648,8 +648,8 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         _write_sfx(unscheduled_effects, scene_duration, sfx)
         inputs = ["-i", str(music), "-i", str(ambience), "-i", str(sfx)]
         has_scene_dialogue = bool(scene["dialogues"])
-        music_gain = "0.10" if has_scene_dialogue else "0.22"
-        ambience_gain = "0.28" if has_scene_dialogue else "0.48"
+        music_gain = "0.38" if has_scene_dialogue else "0.55"
+        ambience_gain = "0.48" if has_scene_dialogue else "0.68"
         filters = [f"[0:a]volume={music_gain}[music]", f"[1:a]volume={ambience_gain}[amb]", "[2:a]volume=0.48[sfx]"]
         mix_labels = ["[music]", "[amb]", "[sfx]"]
         dialogue_records = []
