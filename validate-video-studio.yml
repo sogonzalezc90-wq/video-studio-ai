@@ -68,6 +68,9 @@ jobs:
           assert "createOptionalDialogueScript" in api and "VSA_ENABLE_AI_DIALOGUE" in api, "Optional AI dialogue writer missing"
           assert "audio_script" in worker and "audio_script" in pathlib.Path("worker/audio_pipeline.py").read_text(), "Scene dialogue script is not passed to TTS"
           assert "PiperVoice.load" in audio and "es_MX-claude-high" in audio, "Mexican Spanish TTS model missing"
+          assert "fetch_speechify_dialogue_audio" in worker and "speechify_audio_batch_id" in worker, "Wan worker is missing synchronized Speechify audio downloads"
+          assert "dialogue.get(\"audio_path\")" in audio and '"provider": "speechify"' in audio, "Neural audio pipeline is not using pre-rendered Speechify dialogue"
+          assert "generate_speech_batch" in api and "speechAudioPaths" in api, "Speechify dialogue generation is not connected to the neural queue"
           assert any(c.get("id") == "start-comfy" for c in nb["cells"]), "ComfyUI startup cell missing"
           print("Notebook JSON valid; dynamic worker revision and audio sources are connected.")
           PY
