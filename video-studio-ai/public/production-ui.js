@@ -152,9 +152,12 @@
       const wrap=document.createElement("label");wrap.textContent=character.name;
       const profile=document.createElement("textarea");profile.rows=3;profile.maxLength=1200;profile.placeholder="Descripción visual permanente del personaje";profile.value=character.description||"";
       profile.addEventListener("change",async()=>{try{window.VSAProductionEngine.updateCharacterProfile(manifest,character.name,profile.value);await window.VSAProductionEngine.saveManifest(manifest);castMessage.textContent="Apariencia y vestuario guardados para "+character.name+"."; }catch(error){castMessage.textContent=error.message;}});
-      const select=document.createElement("select");
-      window.VSAProductionEngine.VOICES.forEach(voice=>{const option=document.createElement("option");option.value=voice;option.textContent=voice.charAt(0).toUpperCase()+voice.slice(1);option.selected=voice===character.voice;select.append(option);});
-      select.addEventListener("change",async()=>{try{window.VSAProductionEngine.assignVoice(manifest,character.name,select.value);await window.VSAProductionEngine.saveManifest(manifest);castMessage.textContent="Voz guardada para "+character.name+"."; }catch(error){castMessage.textContent=error.message;}});
+      const select=document.createElement("select");select.className="character-voice-select";
+      const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona una voz aprobada";select.append(placeholder);
+      const approvedIds=window.VSAProductionEngine.VOICES;
+      (window.VSASpeechifyVoices||[]).filter(voice=>approvedIds.includes(voice.id)).forEach(voice=>{const option=document.createElement("option");option.value=voice.id;option.textContent=voice.display_name+" · "+voice.gender+" · "+voice.locale;select.append(option);});
+      if(approvedIds.includes(character.voice))select.value=character.voice;else select.value="";
+      select.addEventListener("change",async()=>{try{if(!select.value)return;window.VSAProductionEngine.assignVoice(manifest,character.name,select.value);await window.VSAProductionEngine.saveManifest(manifest);castMessage.textContent="Voz aprobada guardada para "+character.name+"."; }catch(error){castMessage.textContent=error.message;}});
       wrap.append(profile,select);voiceGrid.append(wrap);
     });
     cast.append(voiceGrid);panel.append(cast);
@@ -238,6 +241,8 @@
   async function restoreLatestManifest(projectId){
     if(!projectId||typeof window.VSASupabaseClient!=="function")return;
     try{
+      if(typeof window.VSALoadSpeechifyVoices==="function")await window.VSALoadSpeechifyVoices();
+      window.VSAProductionEngine.setVoices(window.VSAApprovedSpeechifyVoices||[]);
       const {data,error}=await window.VSASupabaseClient()
         .from("production_manifests")
         .select("manifest")
@@ -262,6 +267,8 @@
   if(projectSelect)projectSelect.addEventListener("change",()=>restoreLatestManifest(projectSelect.value));
   async function prepareManifest(durationSeconds,modeLabel){
     try{
+      if(typeof window.VSALoadSpeechifyVoices==="function")await window.VSALoadSpeechifyVoices();
+      window.VSAProductionEngine.setVoices(window.VSAApprovedSpeechifyVoices||[]);
       const story=$("video-story")?.value.trim()||"";
       if(!story)throw new Error("Primero escribe la historia.");
       const project=$("generation-project");
@@ -285,6 +292,8 @@
   // It builds/restores the manifest, generates every missing master frame, then submits
   // the job. The daily free image cap is respected; already-saved frames remain resumable.
   window.VSAEnsureFilmReadyAndQueue=async function(){
+    if(typeof window.VSALoadSpeechifyVoices==="function")await window.VSALoadSpeechifyVoices();
+    window.VSAProductionEngine.setVoices(window.VSAApprovedSpeechifyVoices||[]);
     const story=$("video-story")?.value.trim()||"";
     const project=$("generation-project");
     const duration=Number(videoDurationSelect?.value)||0;
@@ -368,4 +377,5 @@
   });
   window.addEventListener("vsa-assets-loaded",event=>{availableAssets=Array.isArray(event.detail?.assets)?event.detail.assets:[];if(window.VSAActiveManifest)render(window.VSAActiveManifest);});
   window.addEventListener("vsa-production-updated",event=>{if(event.detail?.manifest)window.VSAActiveManifest=hydrateAssetUrls(event.detail.manifest);});
+  window.VSARenderActiveProduction=()=>{if(window.VSAActiveManifest)render(window.VSAActiveManifest);};
 })();

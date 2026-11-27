@@ -11,7 +11,8 @@
     approved:["rendering"],
     failed:["planned","assets_ready","rendering"]
   };
-  const VOICES=["alvaro","sirio","nestor","carina","celeste","diana","aquila","selena","estrella","javier"];
+  let VOICES=[];
+  function setVoices(voices){VOICES=Array.isArray(voices)?voices.map(value=>String(value||"").trim()).filter(Boolean):[];}
 
   function createManifest(analysis,options={}) {
     if(!window.VSASceneEngine) throw new Error("El analizador de escenas no está disponible.");
@@ -22,7 +23,7 @@
     const plan=window.VSASceneEngine.buildProductionPlan(analysis,duration,maxSegment);
     const characterNames=[...new Set([...(Array.isArray(options.characters)?options.characters:[]),...plan.segments.flatMap(segment=>segment.dialogues.map(line=>line.character))].map(name=>String(name||"").trim()).filter(Boolean))];
     const voiceAssignments={};
-    characterNames.forEach((name,index)=>voiceAssignments[name]=VOICES[index%VOICES.length]);
+    characterNames.forEach(name=>voiceAssignments[name]="");
     const segments=plan.segments.map((segment,index)=>({
       ...segment,
       id:"seg-"+String(index+1).padStart(4,"0"),
@@ -47,7 +48,7 @@
       maxSegmentSeconds:plan.maxSegmentSeconds,
       segmentDurationSeconds:plan.maxSegmentSeconds,
       totalSegments:segments.length,
-      characters:characterNames.map(name=>({id:slug(name),name,voice:voiceAssignments[name],description:""})),
+      characters:characterNames.map(name=>({id:slug(name),name,voice:"",description:""})),
       segments
     };
   }
@@ -75,7 +76,7 @@
     const clean=String(name||"").trim();
     if(!clean)throw new Error("Escribe el nombre del personaje.");
     if(manifest.characters.some(item=>item.name.toLowerCase()===clean.toLowerCase()))throw new Error("Ese personaje ya está registrado.");
-    const profile={id:slug(clean),name:clean,voice:VOICES[manifest.characters.length%VOICES.length],description:String(description||"").trim().slice(0,1200)};
+    const profile={id:slug(clean),name:clean,voice:"",description:String(description||"").trim().slice(0,1200)};
     manifest.characters.push(profile);
     manifest.segments.forEach(segment=>{segment.voiceAssignments[clean]=profile.voice;});
     manifest.updatedAt=new Date().toISOString();
@@ -191,5 +192,5 @@
     if(error)throw new Error("No se pudo recuperar el manifiesto desde Supabase: "+error.message);
     return data?.manifest||null;
   }
-  window.VSAProductionEngine={createManifest,addCharacter,updateCharacterProfile,assignAsset,assignVoice,resolveContinuity,transition,validateManifest,buildExportTimeline,saveManifest,loadManifest,VOICES};
+  window.VSAProductionEngine={createManifest,addCharacter,updateCharacterProfile,assignAsset,assignVoice,resolveContinuity,transition,validateManifest,buildExportTimeline,saveManifest,loadManifest,setVoices,get VOICES(){return [...VOICES];}};
 })();

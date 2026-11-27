@@ -101,9 +101,9 @@
       <section class="panel future-panel" id="voice-preview-panel">
         <p class="eyebrow">AUDICIÓN DE VOCES · ANTES DE PRODUCCIÓN</p>
         <h3>Escucha y aprueba las voces de tus personajes</h3>
-        <p class="muted">Escucha 15 voces neuronales estándar en español de México (7 masculinas y 8 femeninas). El catálogo puede ampliarse sin limitar la cantidad de personajes de tus historias. Son opciones de audición; podrás asignar una voz aprobada a cualquier personaje.</p>
-        <p class="hint">Motor: Azure Speech F0. Microsoft publica 500,000 caracteres neuronales gratuitos al mes. VIDEO STUDIO AI se detendrá preventivamente en 450,000 caracteres para dejar margen. Cada audición cuenta para ese consumo. Las muestras no se guardan en la biblioteca ni se asignan a personajes sin tu aprobación. Requiere configurar el recurso Azure Speech gratuito F0 y sus credenciales privadas en Cloudflare. No se activa ningún servicio de pago.</p>
-        <button id="voice-preview-generate" class="primary" type="button">Generar las 15 muestras de voz</button>
+        <p class="muted">Consulta el catálogo dinámico de Speechify para español de México (es-MX). La cantidad de personajes de tus historias no queda limitada por el número de voces; puedes reutilizar una voz aprobada o elegir otra.</p>
+        <p class="hint">Motor: Speechify Build · Simba 3.0 · es-MX. El plan Free muestra 500,000 caracteres mensuales; VIDEO STUDIO AI se detendrá preventivamente en 450,000. Las muestras oficiales del catálogo no consumen caracteres de síntesis. Solo las voces que apruebes aparecerán para asignarlas a personajes. No hay fallback ni activación de servicios de pago.</p>
+        <button id="voice-preview-generate" class="primary" type="button">Consultar catálogo y escuchar muestras</button>
         <p id="voice-preview-message" class="message" role="status"></p>
         <div id="voice-preview-results" aria-live="polite"></div>
       </section>
@@ -112,7 +112,7 @@
         <h3>Estudio de producción cinematográfica</h3>
         <p class="muted">Analiza historias, organiza escenas, tomas, personajes, referencias y voces, y prepara videos de 15 segundos a 20 minutos. Puedes elegir 15 o 30 segundos, o cualquier duración de 1 a 20 minutos. La producción se divide automáticamente en segmentos de 15 o 30 segundos para organizar y ensamblar el video. El modo gratuito genera imágenes y voz según las cuotas disponibles. El compositor permite movimiento 2D de capas PNG transparentes y ensamblaje en WebM desde el navegador; no es un modelo generativo neuronal de video.</p>
         <p class="hint">Para mantener el costo en cero, conserva tu cuenta Cloudflare en Workers Free. En Workers Paid, el consumo de Workers AI que supere la cuota gratuita puede generar cargos. No actives un plan de pago.</p>
-        <label>Guion o historia<textarea id="video-story" rows="6" maxlength="12000" placeholder="Pega cualquier historia: drama, aventura, ciencia ficción, documental, fantasía, acción u otro género. Describe personajes, escenarios, objetos, diálogos y movimientos."></textarea></label>
+        <label>Guion o historia<textarea id="video-story" rows="6" maxlength="24000" placeholder="Pega cualquier historia de hasta 21,000 caracteres: drama, aventura, ciencia ficción, documental, fantasía, acción u otro género. Describe personajes, escenarios, objetos, diálogos y movimientos."></textarea></label>
         <button id="analyze-story-btn" class="secondary" type="button">Analizar historia y escenas</button>
         <div id="scene-analysis" class="muted" aria-live="polite">Aún no se ha analizado ninguna historia.</div>
         <div class="auth-grid">
@@ -126,7 +126,7 @@
         <div id="segment-workspace" class="segment-workspace" aria-live="polite"><p class="hint">Después de preparar el plan podrás administrar todos los segmentos, referencias y voces. El montaje requiere un clip por segmento o una imagen de fondo. Para movimiento de personajes y vehículos, asigna además PNG transparentes como capas. La exportación se procesa en esta pestaña y puede consumir bastante memoria.</p></div>
         <label>Duración del video<select id="video-duration"><option value="15">15 segundos</option><option value="30" selected>30 segundos</option><option value="60">1 minuto</option><option value="120">2 minutos</option><option value="180">3 minutos</option><option value="240">4 minutos</option><option value="300">5 minutos</option><option value="360">6 minutos</option><option value="420">7 minutos</option><option value="480">8 minutos</option><option value="540">9 minutos</option><option value="600">10 minutos</option><option value="660">11 minutos</option><option value="720">12 minutos</option><option value="780">13 minutos</option><option value="840">14 minutos</option><option value="900">15 minutos</option><option value="960">16 minutos</option><option value="1020">17 minutos</option><option value="1080">18 minutos</option><option value="1140">19 minutos</option><option value="1200">20 minutos</option></select></label>
         <label style="display:flex;align-items:center;gap:9px"><input id="video-audio" type="checkbox" checked style="width:auto;margin:0"> Incluir música, efectos y diálogos hablados (si existen)</label>
-        <label>Voz para los diálogos<select id="video-voice"><option value="alvaro" selected>Álvaro</option><option value="sirio">Sirio</option><option value="nestor">Néstor</option><option value="carina">Carina</option><option value="celeste">Celeste</option><option value="diana">Diana</option><option value="selena">Selena</option><option value="estrella">Estrella</option><option value="aquila">Aquila</option><option value="javier">Javier</option></select></label>
+        <label>Voz para los diálogos<select id="video-voice"><option value="">Escucha y aprueba una voz primero</option></select></label>
         <p class="hint">El analizador identifica el lugar, la actividad y los sonidos descritos en cada escena: zoológicos, consultorios, mercados, plazas comerciales, cafeterías, restaurantes, autódromos, calles y otros entornos. Los diálogos del guion se convierten en voz; en películas largas, Kaggle asigna voces por personaje y sincroniza música, ambientes y efectos. El compositor 2D del modo corto usa sonidos sintetizados; no genera animación neuronal ni expresiones complejas.</p>
         <button id="create-video-btn" class="primary" type="button">Crear video gratis</button>
         <p id="video-message" class="message" role="status"></p>
@@ -139,13 +139,13 @@
     </section>
     <footer>VIDEO STUDIO AI · Proyecto privado · Versión inicial</footer>
   </main>
-  <script src="/app.js?v=20261127-azurevoices1"></script>
+  <script src="/app.js?v=20261127-speechify1"></script>
   <script src="/natural-audio.js?v=20261127-natural2"></script>
   <script src="/scene-engine.js?v=20261127-natural2"></script>
-  <script src="/production-engine.js?v=20261127-natural2"></script>
+  <script src="/production-engine.js?v=20261127-speechify1"></script>
   <script src="/motion-engine.js?v=20261127-natural2"></script>
-  <script src="/film-renderer.js?v=20261127-natural2"></script>
-  <script src="/production-ui.js?v=20261127-natural2"></script>
-<script type="module" src="/video-maker.js?v=20261127-natural2"></script>
+  <script src="/film-renderer.js?v=20261127-speechify1"></script>
+  <script src="/production-ui.js?v=20261127-speechify1"></script>
+<script type="module" src="/video-maker.js?v=20261127-speechify1"></script>
 </body>
 </html>

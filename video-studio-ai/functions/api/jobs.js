@@ -4,11 +4,11 @@ const json = (body, status=200) => new Response(JSON.stringify(body), {
 });
 
 const IMAGE_MODEL="@cf/black-forest-labs/flux-2-klein-4b";
-const SPEECH_PROVIDER="Azure Speech F0";
+const SPEECH_PROVIDER="Speechify AI Build · Simba 3.0";
+const SPEECHIFY_MODEL="simba-3.0";
+const SPEECHIFY_LANGUAGE="es-MX";
 const MAX_PROMPT=3000;
-const MAX_SPEECH_TEXT=5000;
-const AZURE_SPEECH_VOICES=new Set(["es-MX-DaliaNeural","es-MX-JorgeNeural","es-MX-BeatrizNeural","es-MX-CandelaNeural","es-MX-CarlotaNeural","es-MX-CecilioNeural","es-MX-GerardoNeural","es-MX-LarissaNeural","es-MX-LibertoNeural","es-MX-LucianoNeural","es-MX-MarinaNeural","es-MX-NuriaNeural","es-MX-PelayoNeural","es-MX-RenataNeural","es-MX-YagoNeural"]);
-const LEGACY_VOICE_MAP={sirio:"es-MX-JorgeNeural",nestor:"es-MX-GerardoNeural",carina:"es-MX-DaliaNeural",celeste:"es-MX-BeatrizNeural",alvaro:"es-MX-CecilioNeural",diana:"es-MX-CandelaNeural",aquila:"es-MX-LibertoNeural",selena:"es-MX-LarissaNeural",estrella:"es-MX-RenataNeural",javier:"es-MX-PelayoNeural"};
+const MAX_SPEECH_TEXT=20000;
 const MAX_SPEECH_BATCH_CHARS=21000;
 
 async function speechOutputBytes(output) {
@@ -44,8 +44,8 @@ export async function onRequestGet({request,env}) {
   }
   return json({
     ok:true,
-    policy:{billing:"azure-speech-f0-only-no-paid-fallback",paidFallback:false,model:IMAGE_MODEL,speechProvider:SPEECH_PROVIDER,speechLanguage:"es-MX",speechMonthlyAppCapCharacters:450000,speechBatchMaxCharacters:MAX_SPEECH_BATCH_CHARS,speechBatchMaxLines:15,speechRequestMaxCharacters:MAX_SPEECH_TEXT,speechFreeTier:"Azure Speech F0: 500,000 neural characters/month; app stops at 450,000"},
-    diagnostics:{AI:Boolean(env.AI),AZURE_SPEECH_KEY:Boolean(env.AZURE_SPEECH_KEY),AZURE_SPEECH_REGION:Boolean(env.AZURE_SPEECH_REGION),SUPABASE_URL:Boolean(env.SUPABASE_URL),SUPABASE_ANON_KEY:Boolean(env.SUPABASE_ANON_KEY)}
+    policy:{billing:"speechify-free-only-no-paid-fallback",paidFallback:false,model:IMAGE_MODEL,speechProvider:SPEECH_PROVIDER,speechModel:SPEECHIFY_MODEL,speechLanguage:SPEECHIFY_LANGUAGE,speechMonthlyAppCapCharacters:450000,speechBatchMaxCharacters:MAX_SPEECH_BATCH_CHARS,speechRequestMaxCharacters:MAX_SPEECH_TEXT,speechFreeTier:"Speechify Free: 500,000 characters/month; app stops at 450,000"},
+    diagnostics:{AI:Boolean(env.AI),SPEECHIFY_API_KEY:Boolean(env.SPEECHIFY_API_KEY),SUPABASE_URL:Boolean(env.SUPABASE_URL),SUPABASE_ANON_KEY:Boolean(env.SUPABASE_ANON_KEY)}
   });
 }
 
@@ -91,21 +91,38 @@ async function reserveFreeAiQuota(auth,kind) {
 }
 
 
-function xmlEscape(value){return String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
-function azureVoice(value){const requested=String(value||"").trim();const mapped=LEGACY_VOICE_MAP[requested.toLowerCase()]||requested;return AZURE_SPEECH_VOICES.has(mapped)?mapped:null;}
-async function reserveAzureSpeechCharacters(auth,characters){
-  const response=await fetch(auth.base+"/rest/v1/rpc/reserve_vsa_azure_speech_characters",{method:"POST",headers:{apikey:auth.key,authorization:"Bearer "+auth.token,"content-type":"application/json"},body:JSON.stringify({p_characters:characters})});
+async function reserveSpeechifyCharacters(auth,characters){
+  const response=await fetch(auth.base+"/rest/v1/rpc/reserve_vsa_speechify_characters",{method:"POST",headers:{apikey:auth.key,authorization:"Bearer "+auth.token,"content-type":"application/json"},body:JSON.stringify({p_characters:characters})});
   const result=await response.json().catch(()=>0);
-  if(!response.ok)throw new Error("No se pudo reservar el cupo mensual de Azure Speech. Aplica la migración 202611270001_azure_speech_monthly_quota.sql. "+JSON.stringify(result).slice(0,250));
+  if(!response.ok)throw new Error("No se pudo reservar el cupo mensual de Speechify. Aplica la migración 202611270002_speechify_monthly_quota.sql. "+JSON.stringify(result).slice(0,250));
   return Number(result)||0;
 }
-async function synthesizeAzureSpeech(text,voice,env){
-  if(!env.AZURE_SPEECH_KEY||!env.AZURE_SPEECH_REGION)throw new Error("Falta configurar AZURE_SPEECH_KEY y AZURE_SPEECH_REGION en Cloudflare Pages.");
-  const ssml="<speak version='1.0' xml:lang='es-MX'><voice name='"+voice+"'>"+xmlEscape(text)+"</voice></speak>";
-  const endpoint="https://"+String(env.AZURE_SPEECH_REGION).trim()+".tts.speech.microsoft.com/cognitiveservices/v1";
-  const response=await fetch(endpoint,{method:"POST",headers:{"Ocp-Apim-Subscription-Key":env.AZURE_SPEECH_KEY,"Content-Type":"application/ssml+xml","X-Microsoft-OutputFormat":"audio-24khz-48kbitrate-mono-mp3","User-Agent":"VIDEO-STUDIO-AI"},body:ssml});
-  if(!response.ok){const detail=(await response.text().catch(()=>"")).slice(0,350);throw new Error("Azure Speech respondió HTTP "+response.status+". "+detail);}
-  const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error("Azure Speech devolvió audio vacío.");return bytes;
+async function listSpeechifyVoices(env){
+  if(!env.SPEECHIFY_API_KEY)throw new Error("Falta SPEECHIFY_API_KEY en los secretos de Cloudflare Pages.");
+  const voices=[];let cursor=null;
+  for(let page=0;page<10;page++){
+    if(page)await new Promise(resolve=>setTimeout(resolve,1100));
+    const url=new URL("https://api.speechify.ai/v1/voices");
+    url.searchParams.set("locale",SPEECHIFY_LANGUAGE);url.searchParams.set("model",SPEECHIFY_MODEL);url.searchParams.set("limit","200");
+    if(cursor)url.searchParams.set("cursor",cursor);
+    const response=await fetch(url.toString(),{headers:{authorization:"Bearer "+env.SPEECHIFY_API_KEY,accept:"application/json"}});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error("Speechify no pudo consultar el catálogo (HTTP "+response.status+"): "+String(payload?.error?.message||payload?.message||"Error de catálogo").slice(0,240));
+    for(const voice of Array.isArray(payload.voices)?payload.voices:[]){
+      const model=(voice.models||[]).find(item=>item.name===SPEECHIFY_MODEL);
+      const spanish=(model?.languages||[]).find(item=>String(item.locale||"").toLowerCase()==="es-mx");
+      if(spanish)voices.push({id:String(voice.id),display_name:String(voice.display_name||voice.id),gender:voice.gender||"not_specified",locale:spanish.locale,preview_audio:spanish.preview_audio||null,type:voice.type||"shared"});
+    }
+    if(!payload.has_more||!payload.next_cursor)break;
+    cursor=payload.next_cursor;
+  }
+  return voices;
+}
+async function synthesizeSpeechify(text,voice,env){
+  if(!env.SPEECHIFY_API_KEY)throw new Error("Falta SPEECHIFY_API_KEY en los secretos de Cloudflare Pages.");
+  const response=await fetch("https://api.speechify.ai/v1/audio/stream",{method:"POST",headers:{authorization:"Bearer "+env.SPEECHIFY_API_KEY,"content-type":"application/json",accept:"audio/mpeg"},body:JSON.stringify({input:text,voice_id:voice,model:SPEECHIFY_MODEL,language:SPEECHIFY_LANGUAGE})});
+  if(!response.ok){const payload=await response.json().catch(()=>({}));throw new Error("Speechify respondió HTTP "+response.status+": "+String(payload?.error?.message||payload?.message||"Error de síntesis").slice(0,350));}
+  const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error("Speechify devolvió un audio vacío.");return bytes;
 }
 
 async function createOptionalDialogueScript(prompt,durationSeconds,env) {
@@ -321,31 +338,43 @@ export async function onRequestPost({request,env}) {
     }
 
 
-    if(body.action==="generate_speech_batch"||body.action==="generate_azure_speech_batch"){
+    if(body.action==="list_speechify_voices"){
       const speechAuth=await queueAuth(request,env);if(speechAuth.error)return speechAuth.error;
-      if(!env.AZURE_SPEECH_KEY||!env.AZURE_SPEECH_REGION)return json({ok:false,error:"azure_speech_not_configured",message:"Configura AZURE_SPEECH_KEY y AZURE_SPEECH_REGION en Cloudflare Pages antes de generar audios."},503);
-      const rows=Array.isArray(body.dialogues)?body.dialogues:[];
-      if(!rows.length||rows.length>15)return json({ok:false,error:"invalid_speech_batch",message:"La audición admite entre 1 y 15 voces por lote."},400);
-      const dialogues=rows.map((row,index)=>({index:Number.isInteger(Number(row?.index))?Number(row.index):index,segmentId:String(row?.segmentId??"").slice(0,80),text:typeof row?.text==="string"?row.text.trim():"",voice:azureVoice(row?.voice??row?.speaker)}));
-      const totalCharacters=dialogues.reduce((sum,row)=>sum+[...row.text].length,0);
-      if(dialogues.some(row=>!row.text||[...row.text].length>MAX_SPEECH_TEXT||!row.voice))return json({ok:false,error:"invalid_speech_batch_item",message:"Cada muestra admite hasta 5,000 caracteres y una voz mexicana disponible."},400);
-      if(totalCharacters>MAX_SPEECH_BATCH_CHARS)return json({ok:false,error:"speech_batch_too_large",message:"El lote supera 21,000 caracteres. Divide la narración en partes."},413);
-      const reserved=await reserveAzureSpeechCharacters(speechAuth,totalCharacters+dialogues.length*180);
-      if(!reserved)return json({ok:false,error:"azure_monthly_free_quota_exhausted",message:"Se alcanzó el tope preventivo mensual de 450,000 caracteres de Azure Speech F0. No se intentó ningún servicio de pago."},429);
-      const audio=[];
-      for(const item of dialogues){const bytes=await synthesizeAzureSpeech(item.text,item.voice,env);audio.push({segmentId:item.segmentId,index:item.index,audio:encodeBase64(bytes),voice:item.voice});}
-      return json({ok:true,audio,characters:totalCharacters,reservedCharacters:totalCharacters+dialogues.length*180,requestCount:audio.length,billing:"azure-speech-f0-only"});
+      if(!env.SPEECHIFY_API_KEY)return json({ok:false,error:"speechify_not_configured",message:"Configura SPEECHIFY_API_KEY como secreto de producción en Cloudflare Pages."},503);
+      const voices=await listSpeechifyVoices(env);
+      return json({ok:true,voices,model:SPEECHIFY_MODEL,language:SPEECHIFY_LANGUAGE,previewOnly:true});
     }
-    if(body.action==="generate_speech"||body.action==="generate_azure_speech"){
+    if(body.action==="generate_speech_batch"||body.action==="generate_speechify_speech_batch"){
       const speechAuth=await queueAuth(request,env);if(speechAuth.error)return speechAuth.error;
-      if(!env.AZURE_SPEECH_KEY||!env.AZURE_SPEECH_REGION)return json({ok:false,error:"azure_speech_not_configured",message:"Configura AZURE_SPEECH_KEY y AZURE_SPEECH_REGION en Cloudflare Pages antes de generar audios."},503);
-      const text=typeof body.text==="string"?body.text.trim():"";const voice=azureVoice(body.voice??body.speaker??"es-MX-JorgeNeural");const characters=[...text].length;
-      if(!text||characters>MAX_SPEECH_TEXT)return json({ok:false,error:"invalid_speech_text",message:"Cada fragmento debe contener entre 1 y 5,000 caracteres. Divide las narraciones largas automáticamente."},400);
-      if(!voice)return json({ok:false,error:"invalid_speaker",message:"La voz seleccionada no está disponible en el catálogo mexicano."},400);
-      const reserved=await reserveAzureSpeechCharacters(speechAuth,characters+180);
-      if(!reserved)return json({ok:false,error:"azure_monthly_free_quota_exhausted",message:"Se alcanzó el tope preventivo mensual de 450,000 caracteres de Azure Speech F0. No se intentó ningún servicio de pago."},429);
-      const bytes=await synthesizeAzureSpeech(text,voice,env);
-      return new Response(bytes,{status:200,headers:{"content-type":"audio/mpeg","cache-control":"no-store","x-vsa-model":"Azure Speech F0","x-vsa-billing":"azure-speech-f0-only"}});
+      if(!env.SPEECHIFY_API_KEY)return json({ok:false,error:"speechify_not_configured",message:"Configura SPEECHIFY_API_KEY como secreto de producción en Cloudflare Pages."},503);
+      const rows=Array.isArray(body.dialogues)?body.dialogues:[];
+      if(!rows.length||rows.length>15)return json({ok:false,error:"invalid_speech_batch",message:"Cada lote admite entre 1 y 15 intervenciones. La aplicación divide automáticamente los lotes mayores."},400);
+      const dialogues=rows.map((row,index)=>({index:Number.isInteger(Number(row?.index))?Number(row.index):index,segmentId:String(row?.segmentId??"").slice(0,80),text:typeof row?.text==="string"?row.text.trim():"",voice:typeof (row?.voice??row?.speaker)==="string"?String(row.voice??row.speaker).trim():""}));
+      const totalCharacters=dialogues.reduce((sum,row)=>sum+Array.from(row.text).length,0);
+      if(dialogues.some(row=>!row.text||Array.from(row.text).length>MAX_SPEECH_TEXT||!/^[a-z0-9_-]{1,100}$/i.test(row.voice)))return json({ok:false,error:"invalid_speech_batch_item",message:"Cada intervención debe tener texto y un identificador de voz válido; el máximo es 20,000 caracteres por solicitud."},400);
+      if(totalCharacters>MAX_SPEECH_BATCH_CHARS)return json({ok:false,error:"speech_batch_too_large",message:"El lote supera 21,000 caracteres. Divide la narración en partes."},413);
+      const reserved=await reserveSpeechifyCharacters(speechAuth,totalCharacters);
+      if(!reserved)return json({ok:false,error:"speechify_monthly_free_quota_exhausted",message:"Se alcanzó el tope preventivo de 450,000 caracteres de Speechify. La generación se detuvo sin recurrir a servicios de pago."},429);
+      const audio=[];
+      for(let i=0;i<dialogues.length;i++){
+        if(i)await new Promise(resolve=>setTimeout(resolve,1100));
+        const item=dialogues[i],bytes=await synthesizeSpeechify(item.text,item.voice,env);
+        audio.push({segmentId:item.segmentId,index:item.index,audio:encodeBase64(bytes),voice:item.voice});
+      }
+      return json({ok:true,audio,characters:totalCharacters,reservedCharacters:totalCharacters,requestCount:audio.length,model:SPEECHIFY_MODEL,language:SPEECHIFY_LANGUAGE,billing:"speechify-free-only"});
+    }
+    if(body.action==="generate_speech"||body.action==="generate_speechify_speech"){
+      const speechAuth=await queueAuth(request,env);if(speechAuth.error)return speechAuth.error;
+      if(!env.SPEECHIFY_API_KEY)return json({ok:false,error:"speechify_not_configured",message:"Configura SPEECHIFY_API_KEY como secreto de producción en Cloudflare Pages."},503);
+      const text=typeof body.text==="string"?body.text.trim():"";
+      const voice=String(body.voice_id??body.voice??body.speaker??"").trim();
+      const characters=Array.from(text).length;
+      if(!text||characters>MAX_SPEECH_TEXT)return json({ok:false,error:"invalid_speech_text",message:"Cada solicitud admite entre 1 y 20,000 caracteres. Los textos de hasta 21,000 caracteres se dividen automáticamente en fragmentos."},400);
+      if(!/^[a-z0-9_-]{1,100}$/i.test(voice))return json({ok:false,error:"invalid_speaker",message:"Selecciona una voz del catálogo mexicano de Speechify."},400);
+      const reserved=await reserveSpeechifyCharacters(speechAuth,characters);
+      if(!reserved)return json({ok:false,error:"speechify_monthly_free_quota_exhausted",message:"Se alcanzó el tope preventivo de 450,000 caracteres de Speechify. No se recurrió a servicios de pago."},429);
+      const bytes=await synthesizeSpeechify(text,voice,env);
+      return new Response(bytes,{status:200,headers:{"content-type":"audio/mpeg","cache-control":"no-store","x-vsa-model":SPEECHIFY_MODEL,"x-vsa-language":SPEECHIFY_LANGUAGE,"x-vsa-billing":"speechify-free-only"}});
     }
     if(body.action!=="generate_image")
       return json({ok:false,error:"invalid_action",message:"La acción solicitada no está disponible."},400);
@@ -430,8 +459,8 @@ export async function onRequestPost({request,env}) {
     const detail=String(error?.message||error||"Error desconocido").replace(/[\\r\\n]+/g," ").slice(0,900);
     const upstreamStatus=Number(error?.status||error?.statusCode||0)||null;
     console.error("VIDEO STUDIO AI Workers AI generation failed:",{status:upstreamStatus,message:detail});
-    if(/Azure Speech respondió HTTP 429/i.test(detail))
-      return json({ok:false,error:"azure_speech_rate_limited",message:"Azure Speech F0 permite hasta 20 solicitudes por cada 60 segundos. Espera un minuto y vuelve a intentarlo. No se usó ningún servicio de pago."},429);
+    if(/Speechify respondió HTTP 429/i.test(detail))
+      return json({ok:false,error:"speechify_rate_limited",message:"Speechify limitó temporalmente las solicitudes. Espera el tiempo indicado por el servicio y vuelve a intentarlo. No se activó ningún servicio de pago."},429);
     if(quotaError(error)||upstreamStatus===429||/5028|quota|daily limit|neurons exhausted/i.test(detail))
       return json({
         ok:false,error:"free_quota_exhausted",

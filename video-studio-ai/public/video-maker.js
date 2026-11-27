@@ -81,8 +81,9 @@
     if(typeof window.VSAGetSessionToken!=="function")
       throw new Error("No se pudo validar la sesión para generar las voces.");
     const token=await window.VSAGetSessionToken();
-    const speaker=$("video-voice")?.value||"alvaro";
-    setMessage("Generando diálogo completo en español: "+dialogueRows.length+" intervenciones en una sola pista de voz…");
+    const speaker=$("video-voice")?.value||"";
+    if(!speaker)throw new Error("Primero escucha y aprueba una voz Speechify en el catálogo y selecciónala para los diálogos.");
+    setMessage("Generando diálogo en español de México con Speechify Simba 3.0…");
     const response=await fetch("/api/jobs",{
       method:"POST",
       headers:{"content-type":"application/json","authorization":"Bearer "+token},
