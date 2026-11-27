@@ -430,5 +430,5 @@
     return {targetSeconds,maxSegmentSeconds:segmentDuration,totalSegments:segments.length,scenes:sourceScenes.length,segments};
   }
 
-  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan,audioVersion:"20261127-audio7"};
+  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan,audioVersion:"20261127-audio8"};
 })();
