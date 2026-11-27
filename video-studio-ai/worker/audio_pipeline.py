@@ -30,7 +30,7 @@ VOICE_SPECS = {
 }
 NATURAL_AUDIO_SOURCES = {
     "rain": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Rain.ogg",
-    "forest": "https://upload.wikimedia.org/wikipedia/commons/0/0a/20090610_0_ambience.ogg",
+    "forest": "https://upload.wikimedia.org/wikipedia/commons/7/75/Birdsong_mild_sunny_day.ogg",
     "birds": "https://upload.wikimedia.org/wikipedia/commons/3/38/Birds_forest.ogg",
     "footsteps": "https://upload.wikimedia.org/wikipedia/commons/1/10/Forest_track.ogg",
     "cafe": "https://upload.wikimedia.org/wikipedia/commons/5/54/Cafe_ambiance.ogg",
