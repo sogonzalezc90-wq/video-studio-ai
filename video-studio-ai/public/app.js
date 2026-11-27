@@ -652,45 +652,110 @@
 
   async function submitWanJob() {
     const button=$("wan-queue-submit");
+    const uploadedPaths=[];
     try{
       const prompt=$("video-story")?.value.trim()||"";
       const projectId=$("generation-project")?.value||"";
       const durationSeconds=Number($("production-film-duration")?.value||1200);
-      let segmentSeconds=Number($("production-segment-duration")?.value||30);
+      const segmentSeconds=Number($("production-segment-duration")?.value||30);
       if(!Number.isInteger(durationSeconds)||durationSeconds<15||durationSeconds>1200)throw new Error("Selecciona una duración entre 15 segundos y 20 minutos.");
       if(![15,30].includes(segmentSeconds)||durationSeconds%segmentSeconds!==0)throw new Error("La duración seleccionada debe dividirse exactamente en segmentos de 15 o 30 segundos.");
       if(prompt.length<30)throw new Error("Escribe o pega una historia de al menos 30 caracteres en el campo Guion o historia.");
       if(!projectId)throw new Error("Selecciona primero el proyecto destino en Genera imágenes con inteligencia artificial.");
       button.disabled=true;
-      message("wan-queue-message","Comprobando voces aprobadas y preparando audio sincronizado para Wan 2.2…");
-       await loadSpeechifyVoices();
-       const approvedVoiceIds=Array.isArray(window.VSAApprovedSpeechifyVoices)?window.VSAApprovedSpeechifyVoices:[];
-       const {data:{session},error}=await client().auth.getSession();
+      message("wan-queue-message","Consultando voces aprobadas y el guion cinematográfico…");
+      await loadSpeechifyVoices();
+      const approvedVoiceIds=Array.isArray(window.VSAApprovedSpeechifyVoices)?window.VSAApprovedSpeechifyVoices:[];
+      const {data:{session},error}=await client().auth.getSession();
       if(error)throw error;
-      if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
+      if(!session?.access_token||!session.user?.id)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
+      const {data:manifestRow,error:manifestError}=await client().from("production_manifests")
+        .select("manifest").eq("project_id",projectId).eq("user_id",session.user.id)
+        .order("updated_at",{ascending:false}).limit(1).maybeSingle();
+      if(manifestError)throw new Error("No se pudo leer el plan de producción: "+manifestError.message);
+      const manifest=manifestRow?.manifest;
+      if(!manifest||Number(manifest.targetSeconds)!==durationSeconds||Number(manifest.maxSegmentSeconds)!==segmentSeconds)
+        throw new Error("Prepara o guarda nuevamente el plan cinematográfico con la misma duración y segmentos antes de enviar a Wan 2.2.");
+      const dialogueLines=(manifest.segments||[]).flatMap(segment=>(segment.dialogues||[]).map((line,index)=>({
+        segmentId:String(segment.id),index,
+        text:String(line.text||"").trim(),
+        voice:String(segment.voiceAssignments?.[line.character]||""),
+        character:String(line.character||"")
+      }))).filter(line=>line.character&&line.text.length>1);
+      const totalCharacters=dialogueLines.reduce((sum,line)=>sum+Array.from(line.text).length,0);
+      if(totalCharacters>21000)throw new Error("Los diálogos de esta película suman "+totalCharacters+" caracteres. El máximo gratuito preventivo es 21,000; divide la historia en partes.");
+      if(dialogueLines.length>200)throw new Error("La película tiene más de 200 intervenciones. Divide el guion en partes para mantener la sincronización y el control de consumo.");
+      if(dialogueLines.some(line=>!line.voice||!approvedVoiceIds.includes(line.voice)))
+        throw new Error("Cada personaje que habla debe tener una voz Speechify aprobada y guardada en el reparto. No se asignará ninguna automáticamente.");
+      if(dialogueLines.some(line=>Array.from(line.text).length>20000))
+        throw new Error("Una intervención supera 20,000 caracteres. Divide ese parlamento en intervenciones más cortas.");
+      const speechAudioBatchId=dialogueLines.length?crypto.randomUUID():"";
+      const pathByIndex=new Map();
+      const sb=client();
+      for(let offset=0;offset<dialogueLines.length;offset+=15){
+        const batch=dialogueLines.slice(offset,offset+15);
+        message("wan-queue-message","Generando voces Speechify aprobadas · "+Math.min(offset+batch.length,dialogueLines.length)+" de "+dialogueLines.length+" diálogos · "+totalCharacters+" caracteres en total…");
+        const speechResponse=await fetch("/api/jobs",{
+          method:"POST",
+          headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
+          body:JSON.stringify({action:"generate_speech_batch",dialogues:batch.map((line,index)=>({
+            index:offset+index,segmentId:line.segmentId,text:line.text,voice:line.voice
+          }))})
+        });
+        const speechResult=await speechResponse.json().catch(()=>({}));
+        if(!speechResponse.ok||!speechResult.ok||!Array.isArray(speechResult.audio))
+          throw new Error(speechResult.message||"Speechify no pudo generar el lote de diálogos "+(Math.floor(offset/15)+1)+".");
+        const returned=new Map(speechResult.audio.map(item=>[Number(item.index),item]));
+        for(let index=offset;index<offset+batch.length;index++){
+          const item=returned.get(index);
+          if(!item?.audio)throw new Error("Speechify no devolvió el audio de la intervención "+(index+1)+".");
+          const binary=atob(item.audio),bytes=new Uint8Array(binary.length);
+          for(let j=0;j<binary.length;j++)bytes[j]=binary.charCodeAt(j);
+          const storagePath=session.user.id+"/"+projectId+"/speechify/"+speechAudioBatchId+"/dialogue_"+String(index+1).padStart(4,"0")+".mp3";
+          const blob=new Blob([bytes],{type:"audio/mpeg"});
+          const {error:uploadError}=await sb.storage.from("video-assets").upload(storagePath,blob,{contentType:"audio/mpeg",upsert:false});
+          if(uploadError)throw new Error("No se pudo guardar el audio "+(index+1)+" en Supabase: "+uploadError.message);
+          uploadedPaths.push(storagePath);
+          pathByIndex.set(index,storagePath);
+        }
+        const assetRows=batch.map((line,index)=>{
+          const globalIndex=offset+index;
+          return {project_id:projectId,user_id:session.user.id,storage_path:pathByIndex.get(globalIndex),
+            file_name:"speechify-"+speechAudioBatchId.slice(0,8)+"-dialogue-"+String(globalIndex+1).padStart(4,"0")+".mp3",
+            mime_type:"audio/mpeg",asset_type:"audio"};
+        });
+        const {error:assetError}=await sb.from("project_assets").insert(assetRows);
+        if(assetError)throw new Error("Los audios se generaron, pero no se pudieron registrar en la biblioteca: "+assetError.message);
+      }
+      const speechAudioPaths=dialogueLines.map((line,index)=>pathByIndex.get(index));
+      message("wan-queue-message","Audios Speechify listos. Registrando la película neuronal y sus tiempos de diálogo en Supabase…");
       const response=await fetch("/api/jobs",{
         method:"POST",
         headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
         body:JSON.stringify({
-          projectId,prompt,durationSeconds,segmentSeconds,
-          resolution:"720p",style:"Realista cinematográfico",voice:"female",inputMode:"text"
+          projectId,prompt,durationSeconds,segmentSeconds,approvedVoiceIds,
+          speechAudioBatchId,speechAudioPaths,
+          resolution:"720p",style:"Realista cinematográfico",voice:"none",inputMode:"text"
         })
       });
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok){const detail=result.details?("\nDetalle técnico: "+JSON.stringify(result.details)): "";throw new Error((result.message||result.error||"No se pudo registrar el trabajo.")+detail);}
       const durationLabel=durationSeconds<60?durationSeconds+" segundos":Math.floor(durationSeconds/60)+" minuto(s)"+(durationSeconds%60?" y "+(durationSeconds%60)+" segundos":"");
       const audioNote=result.speechify_dialogues
-         ?" "+result.speechify_dialogues+" diálogos sintetizados con voces Speechify aprobadas ("+result.speechify_characters+" caracteres) y guardados para sincronización."
-         :" No se detectaron diálogos; se conservarán música, ambientes y efectos.";
-       const confirmation="Trabajo de "+durationLabel+" registrado correctamente. ID: "+result.job.id+"."+audioNote+" Estado: en espera de GPU. El notebook Kaggle debe estar activo para procesarlo.";
+        ?" "+result.speechify_dialogues+" diálogos con voces Speechify aprobadas ("+result.speechify_characters+" caracteres) preparados y vinculados a sus tiempos."
+        :" No se detectaron diálogos; se conservarán música, ambientes y efectos.";
+      const confirmation="Trabajo de "+durationLabel+" registrado correctamente. ID: "+result.job.id+"."+audioNote+" Estado: en espera de GPU. El notebook Kaggle debe estar activo para procesarlo.";
       message("wan-queue-message",confirmation);
       message("video-message",confirmation);
       await loadWanJobs();
     }catch(error){
+      if(uploadedPaths.length){
+        try{await client().storage.from("video-assets").remove(uploadedPaths);}catch(_){}
+        try{await client().from("project_assets").delete().in("storage_path",uploadedPaths);}catch(_){}
+      }
       message("wan-queue-message",error.message,true);
       message("video-message",error.message,true);
-    }
-    finally{button.disabled=false;}
+    }finally{button.disabled=false;}
   }
 
   $("login-btn").addEventListener("click",()=>auth("login"));
