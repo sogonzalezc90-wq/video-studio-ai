@@ -26,7 +26,7 @@
     ambiente_autodromo:["engine"], ambiente_autobus:["city"], motor_automovil:["engine"], motor_motocicleta:["engine"],
     car:["engine"], motorcycle:["engine"], racetrack:["engine"], race:["engine"],
     herramientas_taller:["workshop"], workshop:["workshop"], ambiente_construccion:["workshop"],
-    construction:["workshop"], kitchen:["workshop"],
+    construction:["workshop"],
     puerta:["door"], door:["door"],
     agua:["water"], water:["water"], river:["water"]
   };
