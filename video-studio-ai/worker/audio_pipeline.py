@@ -5,6 +5,7 @@ procedural music, and synthesized ambience/SFX with FFmpeg. Dialogue is
 spoken only when the prompt contains explicit character-attributed lines.
 """
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -27,7 +28,7 @@ VOICE_SPECS = {
         "pitch": 1.00,
     },
 }
-NATURAL_AUDIO_URLS = {
+NATURAL_AUDIO_SOURCES = {
     "rain": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Rain.ogg",
     "forest": "https://upload.wikimedia.org/wikipedia/commons/0/0a/20090610_0_ambience.ogg",
     "birds": "https://upload.wikimedia.org/wikipedia/commons/3/38/Birds_forest.ogg",
@@ -39,6 +40,10 @@ NATURAL_AUDIO_URLS = {
     "door": "https://upload.wikimedia.org/wikipedia/commons/7/74/Door_handle_creaking.ogg",
     "water": "https://upload.wikimedia.org/wikipedia/commons/2/26/Flowing-water-100019.ogg",
 }
+NATURAL_AUDIO_FILES = {name: name + ".ogg" for name in NATURAL_AUDIO_SOURCES}
+NATURAL_AUDIO_BASE_URL = os.environ.get(
+    "VSA_NATURAL_AUDIO_BASE_URL", "https://video-studio-ai.pages.dev/audio"
+)
 AMBIENCE_ASSETS = {
     "rain": ("rain",), "wind": ("forest",), "forest": ("forest", "birds"),
     "footsteps": ("footsteps",),
@@ -53,15 +58,16 @@ AMBIENCE_ASSETS = {
 }
 
 def _natural_audio_file(name):
-    if name not in NATURAL_AUDIO_URLS:
+    if name not in NATURAL_AUDIO_FILES:
         raise ValueError("No hay una grabación natural registrada para: " + str(name))
     folder = ROOT / "natural_audio"
     folder.mkdir(parents=True, exist_ok=True)
     target = folder / (name + ".ogg")
     if not target.exists() or target.stat().st_size < 2048:
         try:
+            source_url = NATURAL_AUDIO_BASE_URL.rstrip("/") + "/" + NATURAL_AUDIO_FILES[name]
             request = urllib.request.Request(
-                NATURAL_AUDIO_URLS[name],
+                source_url,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; VIDEO-STUDIO-AI/1.0)", "Accept": "audio/ogg,*/*"},
             )
             with urllib.request.urlopen(request, timeout=60) as response:
