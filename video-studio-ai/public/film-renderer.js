@@ -50,36 +50,43 @@
     osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
   }
   async function getDialogueBuffers(manifest,status){
-    const lines=manifest.segments.flatMap(segment=>segment.dialogues.map((line,index)=>({segmentId:segment.id,line,index})));
+    const lines=manifest.segments.flatMap(segment=>segment.dialogues.map((line,index)=>({segmentId:segment.id,line,index,segment})));
     const total=lines.reduce((n,item)=>n+String(item.line.text||"").length,0);
-    if(lines.length>160||total>12000)throw new Error("La película supera el límite de seguridad de voz de esta sesión (160 intervenciones o 12,000 caracteres). Divide la producción en partes.");
+    if(lines.length>40||total>3500)throw new Error("La película supera el límite gratuito seguro de voz de esta sesión (40 intervenciones o 3,500 caracteres). Divide la producción en partes.");
     if(!lines.length)return new Map();
-    const buffers=new Map();
     let token="";
     try{token=await window.VSAGetSessionToken();}catch(_){
       throw new Error("No se pudo validar la sesión para generar las voces. No se creará una película sin diálogo.");
     }
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const buffers=new Map();
     try{
-      for(let i=0;i<lines.length;i++){
-        const item=lines[i],segment=manifest.segments.find(s=>s.id===item.segmentId);
-        status.textContent="Preparando diálogo "+(i+1)+" de "+lines.length+"...";
-        const speaker=segment.voiceAssignments?.[item.line.character]||"alvaro";
-        try{
-          const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},
-            body:JSON.stringify({action:"generate_speech",text:String(item.line.text).slice(0,1200),speaker})});
-          if(!response.ok){
-            throw new Error(response.status===429
-              ?"Se agotó la cuota gratuita diaria de voz. La película se detuvo para no entregar un video sin diálogos."
-              :"No se pudo generar la voz de "+item.line.character+". La película se detuvo para evitar un resultado sin diálogo.");
-          }
-          const bytes=await response.arrayBuffer();
-          if(!bytes.byteLength)continue;
-          buffers.set(item.segmentId+":"+item.index,await ctx.decodeAudioData(bytes.slice(0)));
-        }catch(voiceError){
-          throw voiceError;
-        }
+      status.textContent="Preparando "+lines.length+" voces en español en una sola solicitud gratuita...";
+      const dialogues=lines.map(item=>({
+        segmentId:String(item.segmentId),index:item.index,
+        text:String(item.line.text||"").trim(),
+        speaker:item.segment.voiceAssignments?.[item.line.character]||"alvaro"
+      }));
+      const response=await fetch("/api/jobs",{
+        method:"POST",
+        headers:{"content-type":"application/json","authorization":"Bearer "+token},
+        body:JSON.stringify({action:"generate_speech_batch",dialogues})
+      });
+      let payload={};
+      try{payload=await response.json();}catch(_){}
+      if(!response.ok||!payload.ok||!Array.isArray(payload.audio))
+        throw new Error(payload.message||(response.status===429
+          ?"Se agotó la cuota gratuita diaria de voz. La película se detuvo para no entregar un video sin diálogos."
+          :"No se pudieron generar todas las voces en español. La película se detuvo para evitar diálogos ausentes."));
+      for(const item of payload.audio){
+        if(typeof item.audio!=="string"||!item.audio)throw new Error("El motor de voz devolvió una intervención vacía.");
+        const binary=atob(item.audio),bytes=new Uint8Array(binary.length);
+        for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+        const decoded=await ctx.decodeAudioData(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
+        if(decoded.duration<.15)throw new Error("Una intervención de voz quedó vacía o demasiado corta.");
+        buffers.set(String(item.segmentId)+":"+item.index,decoded);
       }
+      if(buffers.size!==lines.length)throw new Error("El motor de voz no devolvió todas las intervenciones. No se exportará una película incompleta.");
     }finally{await ctx.close();}
     return buffers;
   }
