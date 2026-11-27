@@ -71,6 +71,7 @@
     $("app-panel").classList.remove("hidden");
     $("user-label").textContent = user?.email || "";
     await loadProjects();
+    try{await loadSpeechifyVoices();}catch(error){message("voice-preview-message","No se pudo cargar el catálogo Speechify: "+error.message,true);}
   }
   async function loadProjects() {
     const root=$("projects-list");
@@ -548,65 +549,95 @@
   }
 
 
-  const voicePreviewSamples = [
-    {id:"mx-dalia",name:"Voz 1 · Dalia",voice:"es-MX-DaliaNeural",label:"Femenina · cálida y expresiva",text:"Me alegra que hayan venido. Sé que han trabajado mucho y quiero ayudarlos a conseguir esa oportunidad."},
-    {id:"mx-jorge",name:"Voz 2 · Jorge",voice:"es-MX-JorgeNeural",label:"Masculina · natural y conversacional",text:"Hermanos, escúchenme. No va a ser fácil conseguir ese automóvil, pero si trabajamos juntos, lo vamos a lograr."},
-    {id:"mx-beatriz",name:"Voz 3 · Beatriz",voice:"es-MX-BeatrizNeural",label:"Femenina · clara y serena",text:"Antes de tomar una decisión, necesitamos conocer los riesgos y pensar con calma en lo que puede ocurrir."},
-    {id:"mx-candela",name:"Voz 4 · Candela",voice:"es-MX-CandelaNeural",label:"Femenina · animada",text:"¡Qué emoción! Nunca había visto a alguien prepararse con tantas ganas para una carrera tan importante."},
-    {id:"mx-carlota",name:"Voz 5 · Carlota",voice:"es-MX-CarlotaNeural",label:"Femenina · cercana",text:"No se preocupen. Si permanecemos unidos, encontraremos una solución para salir adelante."},
-    {id:"mx-cecilio",name:"Voz 6 · Cecilio",voice:"es-MX-CecilioNeural",label:"Masculina · adulta y firme",text:"La carrera comienza al amanecer. Revisemos el motor, preparemos las herramientas y salgamos con tiempo."},
-    {id:"mx-gerardo",name:"Voz 7 · Gerardo",voice:"es-MX-GerardoNeural",label:"Masculina · grave y decidida",text:"No pienso rendirme ahora. Hemos avanzado demasiado para dejar nuestro sueño a mitad del camino."},
-    {id:"mx-larissa",name:"Voz 8 · Larissa",voice:"es-MX-LarissaNeural",label:"Femenina · juvenil",text:"¡Eso es! Yo estoy lista desde ahora. Denme una oportunidad y verán de lo que somos capaces."},
-    {id:"mx-liberto",name:"Voz 9 · Liberto",voice:"es-MX-LibertoNeural",label:"Masculina · juvenil y enérgica",text:"¡Vamos! El público ya está llegando y tenemos que demostrar todo lo que hemos practicado."},
-    {id:"mx-luciano",name:"Voz 10 · Luciano",voice:"es-MX-LucianoNeural",label:"Masculina · reflexiva",text:"Esperen un momento. Primero hagamos las cuentas y organicemos el plan. Así tendremos más posibilidades."},
-    {id:"mx-marina",name:"Voz 11 · Marina",voice:"es-MX-MarinaNeural",label:"Femenina · juvenil",text:"A veces el camino parece difícil, pero cada pequeño esfuerzo nos acerca un poco más a lo que soñamos."},
-    {id:"mx-nuria",name:"Voz 12 · Nuria",voice:"es-MX-NuriaNeural",label:"Femenina · madura y tranquila",text:"Lo importante es que cada uno encuentre su lugar y aporte lo mejor de sí mismo al equipo."},
-    {id:"mx-pelayo",name:"Voz 13 · Pelayo",voice:"es-MX-PelayoNeural",label:"Masculina · cálida",text:"El motor está listo. Ahora solo falta concentrarnos, mantener la calma y disfrutar de la competencia."},
-    {id:"mx-renata",name:"Voz 14 · Renata",voice:"es-MX-RenataNeural",label:"Femenina · suave y reflexiva",text:"Quiero que recuerden este momento. Todo lo que estamos construyendo comenzó con una pequeña idea."},
-    {id:"mx-yago",name:"Voz 15 · Yago",voice:"es-MX-YagoNeural",label:"Masculina · enérgica",text:"¡Que se escuche el rugido del motor! Hoy vamos a darlo todo hasta cruzar la línea de meta."}
-  ];
+  async function loadSpeechifyVoices(force=false) {
+    if(!force&&Array.isArray(window.VSASpeechifyVoices)&&window.VSASpeechifyVoices.length)return window.VSASpeechifyVoices;
+    const {data:{session},error}=await client().auth.getSession();
+    if(error)throw error;
+    if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
+    const response=await fetch("/api/jobs",{
+      method:"POST",
+      headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
+      body:JSON.stringify({action:"list_speechify_voices"})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw new Error(result.message||result.error||"No se pudo consultar el catálogo de voces.");
+    const voices=Array.isArray(result.voices)?result.voices:[];
+    window.VSASpeechifyVoices=voices;
+    let approved=[];
+    try{approved=JSON.parse(localStorage.getItem("vsa_speechify_approved_voices")||"[]");}catch(_){}
+    if(!Array.isArray(approved))approved=[];
+    window.VSAApprovedSpeechifyVoices=approved.filter(id=>voices.some(voice=>voice.id===id));
+    window.VSAProductionEngine?.setVoices?.(window.VSAApprovedSpeechifyVoices);
+    const select=$("video-voice");
+    if(select){
+      const previous=select.value;
+      select.replaceChildren();
+      const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona una voz aprobada";select.append(placeholder);
+      voices.filter(voice=>window.VSAApprovedSpeechifyVoices.includes(voice.id)).forEach(voice=>{
+        const option=document.createElement("option");option.value=voice.id;option.textContent=voice.display_name+" · "+voice.gender+" · "+voice.locale;select.append(option);
+      });
+      if(window.VSAApprovedSpeechifyVoices.includes(previous))select.value=previous;
+    }
+    return voices;
+  }
+  window.VSALoadSpeechifyVoices=loadSpeechifyVoices;
+
+  function approveSpeechifyVoice(voice,button) {
+    const approved=new Set(window.VSAApprovedSpeechifyVoices||[]);
+    if(approved.has(voice.id))approved.delete(voice.id);else approved.add(voice.id);
+    window.VSAApprovedSpeechifyVoices=[...approved];
+    localStorage.setItem("vsa_speechify_approved_voices",JSON.stringify(window.VSAApprovedSpeechifyVoices));
+    window.VSAProductionEngine?.setVoices?.(window.VSAApprovedSpeechifyVoices);
+    button.textContent=approved.has(voice.id)?"Quitar aprobación":"Aprobar voz para personajes";
+    const select=$("video-voice");
+    if(select){
+      const previous=select.value;
+      select.replaceChildren();
+      const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona una voz aprobada";select.append(placeholder);
+      (window.VSASpeechifyVoices||[]).filter(item=>approved.has(item.id)).forEach(item=>{
+        const option=document.createElement("option");option.value=item.id;option.textContent=item.display_name+" · "+item.gender+" · "+item.locale;select.append(option);
+      });
+      if(approved.has(previous))select.value=previous;
+    }
+    window.VSARenderActiveProduction?.();
+  }
+
   async function generateVoicePreviews() {
     const button=$("voice-preview-generate");
     const root=$("voice-preview-results");
     try {
       button.disabled=true;
-      button.textContent="Generando las 15 muestras…";
+      button.textContent="Consultando catálogo mexicano…";
       root.replaceChildren();
-      message("voice-preview-message","Solicitando quince voces neuronales mexicanas de Azure Speech F0. Se generan una por una para respetar el límite de solicitudes; no se publican ni se asignan a personajes.");
-      const {data:{session},error}=await client().auth.getSession();
-      if(error)throw error;
-      if(!session?.access_token)throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
-      const response=await fetch("/api/jobs",{
-        method:"POST",
-        headers:{"content-type":"application/json",authorization:"Bearer "+session.access_token},
-        body:JSON.stringify({action:"generate_azure_speech_batch",dialogues:voicePreviewSamples.map((sample,index)=>({
-          index,segmentId:sample.id,voice:sample.voice,text:sample.text
-        }))})
-      });
-      const result=await response.json().catch(()=>({}));
-      if(!response.ok||!result.ok)throw new Error(result.message||result.error||"No se pudieron generar las muestras.");
-      const byId=new Map((result.audio||[]).map(item=>[item.segmentId,item.audio]));
-      for(const sample of voicePreviewSamples){
-        const encoded=byId.get(sample.id);
-        if(!encoded)throw new Error("El motor no devolvió la muestra de "+sample.name+".");
-        const binary=atob(encoded),bytes=new Uint8Array(binary.length);
-        for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-        const url=URL.createObjectURL(new Blob([bytes],{type:"audio/mpeg"}));
+      message("voice-preview-message","Consultando las voces que realmente ofrece tu cuenta para español de México y Simba 3.0. Las muestras del catálogo no consumen caracteres de síntesis.");
+      const voices=await loadSpeechifyVoices(true);
+      if(!voices.length)throw new Error("Speechify no devolvió voces compatibles con español de México (es-MX) y Simba 3.0.");
+      for(const voice of voices){
         const card=document.createElement("article");
         card.className="project-card";
         card.style.cssText="padding:16px;margin:12px 0";
-        const title=document.createElement("h4");title.textContent=sample.name;
-        const label=document.createElement("p");label.className="muted";label.textContent=sample.label+" · Motor: "+sample.voice;
-        const dialogue=document.createElement("p");dialogue.textContent="“"+sample.text+"”";
-        const player=document.createElement("audio");player.controls=true;player.preload="metadata";player.src=url;player.style.cssText="display:block;width:100%;margin-top:10px";
-        card.append(title,label,dialogue,player);root.append(card);
+        const title=document.createElement("h4");title.textContent=voice.display_name;
+        const label=document.createElement("p");label.className="muted";label.textContent=(voice.gender||"Género no especificado")+" · "+voice.locale+" · "+voice.id;
+        card.append(title,label);
+        if(voice.preview_audio){
+          const player=document.createElement("audio");player.controls=true;player.preload="none";player.src=voice.preview_audio;player.style.cssText="display:block;width:100%;margin-top:10px";
+          card.append(player);
+          const approve=document.createElement("button");approve.type="button";approve.className="secondary";
+          approve.textContent=(window.VSAApprovedSpeechifyVoices||[]).includes(voice.id)?"Quitar aprobación":"Aprobar voz para personajes";
+          approve.addEventListener("click",()=>approveSpeechifyVoice(voice,approve));
+          card.append(approve);
+        }else{
+          const noPreview=document.createElement("p");noPreview.className="hint";noPreview.textContent="Speechify no proporcionó una muestra en español para esta voz; no se puede aprobar todavía.";
+          card.append(noPreview);
+        }
+        root.append(card);
       }
-      message("voice-preview-message","Las quince muestras reales de Azure Speech están listas. Reprodúcelas y decide cuáles apruebas. Ninguna se ha asignado a personajes ni se ha subido a producción.");
+      message("voice-preview-message","Catálogo cargado: "+voices.length+" voces es-MX compatibles con Simba 3.0. Escucha cada muestra y pulsa «Aprobar voz» para habilitarla en los selectores. Ninguna voz se ha asignado automáticamente.");
     }catch(error){
       message("voice-preview-message",error.message,true);
     }finally{
       button.disabled=false;
-      button.textContent="Generar las 15 muestras de voz";
+      button.textContent="Consultar catálogo y escuchar muestras";
     }
   }
 
