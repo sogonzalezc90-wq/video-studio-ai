@@ -1,7 +1,7 @@
 """Scene-aware, local Spanish audio pipeline for VIDEO STUDIO AI.
 
 Creates a scene timeline, stable per-character TTS identities, original
-procedural music, and synthesized ambience/SFX with FFmpeg. Dialogue is
+procedural music, and real recorded ambience plus contextual SFX with FFmpeg. Dialogue is
 spoken only when the prompt contains explicit character-attributed lines.
 """
 import json
@@ -48,7 +48,7 @@ AMBIENCE_ASSETS = {
     "rain": ("rain",), "wind": ("forest",), "forest": ("forest", "birds"),
     "footsteps": ("footsteps",),
     "race": ("engine",), "engine": ("engine",), "city": ("city",),
-    "airport": ("city",), "bus": ("city",), "subway": ("city",),
+    "bus": ("city",),
     "cafe": ("cafe",), "market": ("cafe",), "mall": ("cafe",),
     "restaurant": ("cafe",), "school": ("cafe",), "hotel": ("cafe",),
     "crowd": ("cafe",), "zoo": ("forest", "birds"), "park": ("forest", "birds"),
