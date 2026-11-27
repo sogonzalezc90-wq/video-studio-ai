@@ -111,7 +111,7 @@ class AudioPipelineTests(unittest.TestCase):
             crossings = sum(1 for left, right in zip(signs, signs[1:]) if left != right)
             crossing_ratio = crossings / max(1, len(signs) - 1)
             rms = (sum(sample * sample for sample in samples) / max(1, len(samples))) ** 0.5
-            self.assertGreater(rms, 80, "Café ambience must be audible in the rendered track")
+            self.assertGreater(rms, 250, "Café ambience must be clearly audible in the rendered track")
             self.assertLess(crossing_ratio, 0.35, "Café ambience must not resemble broadband static")
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
@@ -141,6 +141,9 @@ class AudioPipelineTests(unittest.TestCase):
         self.assertIn('equalizer=f=3200:t=q:w=1.0:g=2.5', source)
         self.assertIn('volume=2.0,acompressor=threshold=-22dB:ratio=3.0', source)
         self.assertIn('loudnorm=I=-14:LRA=9:TP=-1.5', source)
+        self.assertIn('music_gain = "0.38" if has_scene_dialogue else "0.55"', source)
+        self.assertIn('ambience_gain = "0.48" if has_scene_dialogue else "0.68"', source)
+        self.assertIn("0.52*exp(-4.2", source)
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg tools unavailable")
     def test_final_audio_is_rendered_with_audible_normalized_level(self):
