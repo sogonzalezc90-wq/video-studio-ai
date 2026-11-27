@@ -20,7 +20,7 @@ jobs:
       - name: Verify natural audio assets deployed and wired to all renderers
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
-          ASSET_VERSION: "20261127-natural1"
+          ASSET_VERSION: "20261127-natural2"
         run: |
           set -euo pipefail
           has() { grep -Fq -- "$1" <<< "$2"; }
@@ -38,7 +38,7 @@ jobs:
               for token in '/audio/rain.ogg' '/audio/forest.ogg' '/audio/birds.ogg' '/audio/footsteps.ogg' '/audio/cafe.ogg' '/audio/city.ogg' '/audio/engine.ogg' '/audio/workshop.ogg' '/audio/door.ogg' '/audio/water.ogg' 'decodeAudioData' 'same-origin'; do
                 if ! has "$token" "$library"; then echo "Missing natural library token: $token"; ok=false; fi
               done
-              for token in 'await window.VSANaturalAudio.load' 'natural.play(master,cue,when,len,ambienceLevel)' 'audioVersion:"20261127-natural1"'; do
+              for token in 'await window.VSANaturalAudio.load' 'natural.play(master,cue,when,len,ambienceLevel)' 'audioVersion:"20261127-natural2"'; do
                 if ! has "$token" "$scene"; then echo "Missing short-video natural audio token: $token"; ok=false; fi
               done
               for token in 'window.VSANaturalAudio.load' 'natural.play(master,cue,segmentStart,duration,level)' 'action:"generate_speech_batch"' 'peak<.002'; do
