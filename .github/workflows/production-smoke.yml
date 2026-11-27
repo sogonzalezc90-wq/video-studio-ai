@@ -1,4 +1,4 @@
-name: Verify VIDEO STUDIO AI production audio
+name: Verify VIDEO STUDIO AI natural audio in production
 on:
   push:
     branches: ["main"]
@@ -12,60 +12,55 @@ on:
     workflows: ["Manual deploy to Cloudflare Pages"]
     types: [completed]
 jobs:
-  production-audio-smoke:
+  natural-audio-smoke:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
-      - name: Verify deployed audio engines and speech pipeline
+      - name: Verify natural audio assets deployed and wired to all renderers
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
-          ASSET_VERSION: "20261127-audio8"
+          ASSET_VERSION: "20261127-natural1"
         run: |
           set -euo pipefail
           has() { grep -Fq -- "$1" <<< "$2"; }
           for attempt in $(seq 1 24); do
             if ! html=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/?v=$ASSET_VERSION"); then
               echo "Attempt $attempt/24: production HTML is not reachable"
-            elif ! has "/scene-engine.js?v=$ASSET_VERSION" "$html"; then
-              echo "Attempt $attempt/24: waiting for production HTML version $ASSET_VERSION"
+            elif ! has "/natural-audio.js?v=$ASSET_VERSION" "$html"; then
+              echo "Attempt $attempt/24: waiting for natural audio asset version $ASSET_VERSION"
             else
-              scene=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION")
-              scene_ok=true
-              for token in 'audioVersion:"20261127-audio8"' 'function addMurmur' 'function addBirdChirps' 'function addEngineRev' 'function addMusicPluck' 'Pink/brown-leaning ambience' 'music.gain.value=analysis.hasDialogue?.52:.72' 'addMusicPluck(ctx,music,at,root,.34,mood==="suspenso"?.12:.11)' 'ambiente_zoologico' 'ambiente_consultorio' 'ambiente_mercado' 'ambiente_plaza_comercial' 'ambiente_restaurante' 'ambiente_autodromo' 'ambiente_calle' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio'; do
-                if ! has "$token" "$scene"; then echo "Missing scene-engine token: $token"; scene_ok=false; fi
+              library=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/natural-audio.js?v=$ASSET_VERSION")
+              scene=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION")
+              renderer=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
+              maker=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/video-maker.js?v=$ASSET_VERSION")
+              ok=true
+              for token in '/audio/rain.ogg' '/audio/forest.ogg' '/audio/birds.ogg' '/audio/footsteps.ogg' '/audio/cafe.ogg' '/audio/city.ogg' '/audio/engine.ogg' '/audio/workshop.ogg' '/audio/door.ogg' '/audio/water.ogg' 'decodeAudioData' 'same-origin'; do
+                if ! has "$token" "$library"; then echo "Missing natural library token: $token"; ok=false; fi
               done
-              if [ "$scene_ok" = true ]; then
-                renderer=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
-                renderer_ok=true
-                for token in 'cueMurmur' 'cueMusicPluck' 'music.gain.value=dialogueBuffers.size?.42:.70' 'cueMusicPluck(audioCtx,music,scoreStart+t,root,.34,.11)' 'limiter.threshold.value=-10' 'peak=Math.max(peak,sample)' 'action:"generate_speech_batch"' 'total>3500' 'ambiente_zoologico' 'equipo_medico' 'caja_registradora' 'ambiente_biblioteca' 'ambiente_escuela' 'ambiente_museo' 'ambiente_hotel' 'ambiente_iglesia' 'ambiente_parque' 'ambiente_piscina' 'ambiente_autobus' 'ambiente_construccion' 'ambiente_teatro' 'ambiente_gimnasio' 'paginas' 'campanas_iglesia' 'elevador'; do
-                  if ! has "$token" "$renderer"; then echo "Missing film-renderer token: $token"; renderer_ok=false; fi
-                done
-                if [ "$renderer_ok" = true ]; then
-                  maker=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/video-maker.js?v=$ASSET_VERSION")
-                  maker_ok=true
-                  for token in 'voiceCompressor' 'normalizedGain=Math.min(8' 'rms<0.0005' 'source.playbackRate.value=1' 'source.start(context.currentTime+1.1)' 'No se detectaron líneas de diálogo'; do
-                    if ! has "$token" "$maker"; then echo "Missing video-maker token: $token"; maker_ok=false; fi
-                  done
-                  if [ "$maker_ok" = true ]; then
-                    api=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/api/jobs")
-                    if has 'free-allocation-only-no-provider-fallback' "$api" && has 'speechBatchMaxCharacters' "$api" && has 'speechBatchMaxLines' "$api"; then
-                      echo "PRODUCTION AUDIO ASSETS VERIFIED"
-                      echo "Deployed contextual sound engine, improved speech normalization, silent-audio guard, and free-only API policy are present."
-                      exit 0
-                    fi
-                    echo "Attempt $attempt/24: free-only API policy response is not ready"
-                  else
-                    echo "Attempt $attempt/24: speech renderer checks failed"
-                  fi
-                else
-                  echo "Attempt $attempt/24: film renderer checks failed"
+              for token in 'await window.VSANaturalAudio.load' 'natural.play(master,cue,when,len,ambienceLevel)' 'audioVersion:"20261127-natural1"'; do
+                if ! has "$token" "$scene"; then echo "Missing short-video natural audio token: $token"; ok=false; fi
+              done
+              for token in 'window.VSANaturalAudio.load' 'natural.play(master,cue,segmentStart,duration,level)' 'action:"generate_speech_batch"' 'peak<.002'; do
+                if ! has "$token" "$renderer"; then echo "Missing film natural audio token: $token"; ok=false; fi
+              done
+              if ! has 'stopAudio=await window.VSASceneEngine.buildAudio' "$maker"; then
+                echo "Short-video renderer does not await natural audio loading"; ok=false
+              fi
+              for file in rain forest birds footsteps cafe city engine workshop door water; do
+                bytes=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/audio/$file.ogg" | wc -c)
+                if [ "$bytes" -lt 2048 ]; then echo "Missing or incomplete deployed audio: $file.ogg"; ok=false; fi
+              done
+              if [ "$ok" = true ]; then
+                api=$(curl --fail --silent --show-error --location "$PRODUCTION_URL/api/jobs")
+                if has 'free-allocation-only-no-provider-fallback' "$api" && has 'speechBatchMaxCharacters' "$api"; then
+                  echo "PRODUCTION NATURAL AUDIO LIBRARY VERIFIED"
+                  echo "Recorded rain, forest, birds, footsteps, cafe, city, engine, workshop, door and water are deployed and connected to the short and long video renderers."
+                  exit 0
                 fi
-              else
-                echo "Attempt $attempt/24: scene engine checks failed"
               fi
             fi
             if [ "$attempt" -lt 24 ]; then sleep 10; fi
           done
-          echo "Production audio asset verification did not pass."
+          echo "Production natural audio verification did not pass."
           exit 1
