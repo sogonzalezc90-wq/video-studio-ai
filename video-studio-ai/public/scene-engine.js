@@ -175,8 +175,29 @@
 
   function noiseBuffer(ctx,seconds=2){
     const length=Math.max(1,Math.floor(ctx.sampleRate*seconds)),b=ctx.createBuffer(1,length,ctx.sampleRate),d=b.getChannelData(0);
-    for(let i=0;i<length;i++)d[i]=Math.random()*2-1;
+    // Pink/brown-leaning ambience instead of full-band white noise (the latter resembles radio static).
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,peak=0;
+    for(let i=0;i<length;i++){
+      const white=Math.random()*2-1;
+      b0=.99886*b0+white*.0555179;b1=.99332*b1+white*.0750759;
+      b2=.969*b2+white*.153852;b3=.8665*b3+white*.3104856;
+      b4=.55*b4+white*.5329522;b5=-.7616*b5-white*.016898;
+      const pink=(b0+b1+b2+b3+b4+b5+b6+white*.5362)*.11;
+      b6=white*.115926;d[i]=pink;peak=Math.max(peak,Math.abs(pink));
+    }
+    const scale=peak>.0001?.72/peak:1;
+    for(let i=0;i<length;i++)d[i]*=scale;
     return b;
+  }
+  function addMusicPluck(ctx,dest,when,frequency,duration,volume=.035){
+    const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    osc.type="triangle";osc.frequency.setValueAtTime(frequency,when);
+    filter.type="lowpass";filter.frequency.setValueAtTime(2600,when);filter.Q.value=.55;
+    gain.gain.setValueAtTime(.0001,when);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.018);
+    gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+    osc.connect(filter);filter.connect(gain);gain.connect(dest);
+    osc.start(when);osc.stop(when+duration+.02);
   }
   function tone(ctx,dest,when,freq,dur,wave="sine",vol=.04,endFreq=null){
     if(dur<=0)return;
@@ -248,33 +269,30 @@
   }
   function buildAudio(ctx,destination,duration,analysis){
     const start=ctx.currentTime+.15,master=ctx.createGain(),music=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
-    compressor.threshold.value=-24;compressor.knee.value=16;compressor.ratio.value=4.5;
+    compressor.threshold.value=-12;compressor.knee.value=4;compressor.ratio.value=12;
     compressor.attack.value=.003;compressor.release.value=.24;
-    master.gain.value=1.12;music.gain.value=analysis.hasDialogue?.28:.56;
+    master.gain.value=.92;music.gain.value=analysis.hasDialogue?.34:.62;
     music.connect(master);master.connect(compressor);compressor.connect(destination);
-    // Replace the old continuous low-frequency drone (which sounded like a hum)
-    // with short, musical notes and a gentle changing arpeggio.
+    // Plucked, changing arpeggio: no sustained low-frequency chord that can sound like a hum.
     const mood=analysis.scenes.some(s=>s.mood==="suspenso")?"suspenso":analysis.scenes.some(s=>s.mood==="accion")?"accion":"drama";
-    const scale=mood==="suspenso"?[146.83,174.61,220,293.66]:mood==="accion"?[196,246.94,293.66,392]:[220,261.63,329.63,392];
-    const beat=1.15;
+    const scale=mood==="suspenso"?[146.83,174.61,220,293.66,261.63,220]:mood==="accion"?[196,246.94,293.66,392,349.23,293.66]:[220,261.63,329.63,392,349.23,293.66];
+    const beat=mood==="accion"?.34:.48;
     for(let t=0,n=0;t<duration;t+=beat,n++){
-      const at=start+t;
-      const root=scale[n%scale.length];
-      tone(ctx,music,at,root,.46,"triangle",.12);
-      if(n%2===0)tone(ctx,music,at+.24,root*1.5,.30,"sine",.045);
-      if(n%4===3)tone(ctx,music,at+.48,root*2,.24,"sine",.028);
+      const at=start+t,root=scale[n%scale.length];
+      addMusicPluck(ctx,music,at,root,.34,mood==="suspenso"?.052:.044);
+      if(n%3===1)addMusicPluck(ctx,music,at+.12,root*2,.22,.012);
     }
     const span=duration/Math.max(1,analysis.scenes.length);
     analysis.scenes.forEach((s,i)=>{
       const when=start+i*span,len=Math.max(.5,Math.min(span*.8,6));
       if(s.types.includes("car"))addEngineRev(ctx,master,when,len,.075);
       if(s.types.includes("motorcycle"))tone(ctx,master,when,95,len,"sawtooth",.07,220);
-      if(s.types.includes("rain"))noise(ctx,master,when,len,.014,"lowpass",1250);
-      if(s.types.includes("wind"))noise(ctx,master,when,len,.009,"lowpass",420);
+      if(s.types.includes("rain"))noise(ctx,master,when,len,.025,"lowpass",4200);
+      if(s.types.includes("wind"))noise(ctx,master,when,len,.022,"lowpass",900);
       if(s.types.includes("footsteps"))for(let k=0;k<Math.min(8,Math.floor(len*1.5));k++)tone(ctx,master,when+k*.48,92+(k%2)*22,.12,"triangle",.035,48);
-      if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.018,"highpass",2200);}
+      if(s.types.includes("workshop")){tone(ctx,master,when,700,.16,"square",.018,500);noise(ctx,master,when+.2,len*.6,.012,"highpass",2600);}
       if(s.types.includes("door")){tone(ctx,master,when,180,.3,"triangle",.05,65);tone(ctx,master,when+.34,620,.12,"sine",.02,250);}
-      if(s.types.includes("impact")){noise(ctx,master,when,.5,.07,"lowpass",400);tone(ctx,master,when,90,.3,"sawtooth",.06,32);}
+      if(s.types.includes("impact")){noise(ctx,master,when,.5,.055,"lowpass",650);tone(ctx,master,when,105,.22,"triangle",.035,42);}
       if(s.types.includes("cafe")){addMurmur(ctx,master,when,len,.024);addGlassClinks(ctx,master,when,3);}
       if(s.types.includes("chatter")||s.types.includes("crowd"))addMurmur(ctx,master,when,len,.026);
       if(s.types.includes("cups"))addGlassClinks(ctx,master,when,3);
@@ -291,7 +309,7 @@
       if(s.types.includes("water"))noise(ctx,master,when,len,.018,"lowpass",2200);
       if(s.types.includes("dog")||s.types.includes("cat")||s.types.includes("horse")||s.types.includes("animal"))tone(ctx,master,when+Math.min(1,len*.2),260,.22,"triangle",.007,390);
       if(s.types.includes("alarm"))tone(ctx,master,when,880,.45,"sine",.012,660);
-      if(s.dialogues.length){music.gain.setValueAtTime(.035,when);music.gain.setValueAtTime(.1,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
+      if(s.dialogues.length){music.gain.setValueAtTime(.12,when);music.gain.setValueAtTime(analysis.hasDialogue?.34:.62,Math.min(start+duration-.05,when+Math.max(1,len*.7)));}
       if(s.mood==="suspenso")tone(ctx,master,when,440,1.6,"sine",.014,330);
     });
     return ()=>{try{master.disconnect();music.disconnect();compressor.disconnect();}catch(_){}};
@@ -412,5 +430,5 @@
     return {targetSeconds,maxSegmentSeconds:segmentDuration,totalSegments:segments.length,scenes:sourceScenes.length,segments};
   }
 
-  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan,audioVersion:"20261127-audio5"};
+  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan,audioVersion:"20261127-audio6"};
 })();
