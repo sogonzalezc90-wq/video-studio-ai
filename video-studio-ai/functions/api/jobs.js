@@ -244,7 +244,7 @@ async function createVideoJob(request,env,body,auth) {
     if(!/^[0-9a-f-]{36}$/i.test(speechifyBatchId)||speechAudioPaths.length!==plannedDialogues.length)
       return json({ok:false,error:"speechify_audio_not_prepared",message:"Primero genera y guarda los audios Speechify de todos los diálogos aprobados; después vuelve a enviar el video neuronal."},409);
     const expectedPrefix=auth.user.id+"/"+projectId+"/speechify/"+speechifyBatchId+"/";
-    if(speechAudioPaths.some(path=>typeof path!=="string"||!path.startsWith(expectedPrefix)||!/^.+\\.mp3$/i.test(path)))
+    if(speechAudioPaths.some(path=>typeof path!=="string"||!path.startsWith(expectedPrefix)||!/^.+\.mp3$/i.test(path)))
       return json({ok:false,error:"speechify_audio_path_invalid",message:"Uno o más archivos de voz no pertenecen al proyecto y lote de audio actual."},403);
     plannedDialogues.forEach((line,index)=>{line.audio_storage_path=speechAudioPaths[index];});
   }
