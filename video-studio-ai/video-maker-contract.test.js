@@ -34,3 +34,16 @@ test("Create Video runs the long-film preparation workflow instead of directly c
   assert.match(maker, /VSAEnsureFilmReadyAndQueue/);
   assert.match(maker, /await window\.VSAEnsureFilmReadyAndQueue\(\)/);
 });
+
+
+test("speech renderer normalizes quiet TTS and rejects silent audio before export", () => {
+  assert.match(maker, /normalizedGain=Math\.min\(8/);
+  assert.match(maker, /rms<0\.0005/);
+  assert.match(maker, /peak<0\.002/);
+  assert.match(maker, /voiceCompressor\.threshold\.value=-20/);
+});
+
+test("short-video renderer tells the user when the script has no spoken dialogue", () => {
+  assert.match(maker, /No se detectaron líneas de diálogo/);
+  assert.match(maker, /Personaje: texto/);
+});
