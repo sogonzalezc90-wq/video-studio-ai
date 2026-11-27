@@ -25,6 +25,45 @@ VOICE_SPECS = {
         "pitch": 1.00,
     },
 }
+NATURAL_AUDIO_URLS = {
+    "rain": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Rain.ogg",
+    "forest": "https://upload.wikimedia.org/wikipedia/commons/0/0a/20090610_0_ambience.ogg",
+    "birds": "https://upload.wikimedia.org/wikipedia/commons/3/38/Birds_forest.ogg",
+    "cafe": "https://upload.wikimedia.org/wikipedia/commons/5/54/Cafe_ambiance.ogg",
+    "city": "https://upload.wikimedia.org/wikipedia/commons/8/88/Sonido_del_centro_de_la_ciudad_a_las_8_de_la_ma%C3%B1ana.ogg",
+    "engine": "https://upload.wikimedia.org/wikipedia/commons/9/98/Maserati_GranTurismo_S_Exhaust.ogg",
+    "workshop": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Mowing_and_sawing_etc.ogg",
+    "door": "https://upload.wikimedia.org/wikipedia/commons/7/74/Door_handle_creaking.ogg",
+    "water": "https://upload.wikimedia.org/wikipedia/commons/2/26/Flowing-water-100019.ogg",
+}
+AMBIENCE_ASSETS = {
+    "rain": ("rain",), "wind": ("forest",), "forest": ("forest", "birds"),
+    "race": ("engine",), "engine": ("engine",), "city": ("city",),
+    "airport": ("city",), "bus": ("city",), "subway": ("city",),
+    "cafe": ("cafe",), "market": ("cafe",), "mall": ("cafe",),
+    "restaurant": ("cafe",), "school": ("cafe",), "hotel": ("cafe",),
+    "crowd": ("cafe",), "zoo": ("forest", "birds"), "park": ("forest", "birds"),
+    "farm": ("forest", "birds"), "insects": ("forest",),
+    "construction": ("workshop",), "workshop": ("workshop",), "kitchen": ("workshop",),
+    "river": ("water",), "water": ("water",), "pool": ("water",), "ocean": ("water",),
+}
+
+def _natural_audio_file(name):
+    if name not in NATURAL_AUDIO_URLS:
+        raise ValueError("No hay una grabación natural registrada para: " + str(name))
+    folder = ROOT / "natural_audio"
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / (name + ".ogg")
+    if not target.exists() or target.stat().st_size < 2048:
+        try:
+            urllib.request.urlretrieve(NATURAL_AUDIO_URLS[name], target)
+        except Exception as exc:
+            target.unlink(missing_ok=True)
+            raise RuntimeError("No se pudo descargar el ambiente natural " + name + ". No se sustituirá por ruido sintético.") from exc
+    if target.stat().st_size < 2048:
+        raise RuntimeError("La grabación natural " + name + " está incompleta.")
+    return target
+
 SCENE_HEADING = re.compile(
     r"(?im)^\s*(?:(?:\d+\.\s*)?(?:GUION[^\n]*?—\s*)?(?:ESCENA|SCENE)\s*\d*\s*[:.\-—].*|"
     r"(?:TOMA|TAKE)\s+\d+(?:\.\d+)?\s*[—:.-]?.*|"
@@ -322,123 +361,43 @@ def _write_music(mood, duration, target):
           "-t", duration, "-ar", 48000, "-ac", 2, target])
 
 def _write_ambience(names, duration, target):
-    inputs, filters = [], []
+    """Mix real field recordings; never fabricate environmental beds from noise."""
+    selected = []
     for name in names:
-        if name == "rain":
-            source = f"anoisesrc=color=pink:amplitude=0.10:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=5200,highpass=f=180"
-        elif name in ("wind", "forest"):
-            source = f"anoisesrc=color=brown:amplitude=0.07:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=900"
-        elif name == "race":
-            source = f"aevalsrc=0.024*sin(2*PI*(68+42*sin(2*PI*0.17*t))*t)+0.012*sin(2*PI*(136+84*sin(2*PI*0.17*t))*t)+0.006*sin(2*PI*(410+150*sin(2*PI*0.17*t))*t):s=48000:d={duration}"
-            filt = "lowpass=f=1800,afade=t=in:d=0.5"
-        elif name == "city":
-            source = f"aevalsrc=0.010*sin(2*PI*(58+24*sin(2*PI*0.11*t))*t)+0.005*sin(2*PI*(116+48*sin(2*PI*0.11*t))*t)+0.002*sin(2*PI*430*t)*abs(sin(2*PI*0.35*t)):s=48000:d={duration}"
-            filt = "lowpass=f=1500,highpass=f=45"
-        elif name == "airport":
-            source = f"anoisesrc=color=brown:amplitude=0.055:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=850,highpass=f=70,tremolo=f=0.12:d=0.45"
-        elif name == "cafe":
-            source = f"aevalsrc=0.055*sin(2*PI*(118+9*sin(2*PI*1.1*t))*t)*abs(sin(2*PI*1.6*t))+0.038*sin(2*PI*(530+42*sin(2*PI*1.4*t))*t)*abs(sin(2*PI*1.2*t))+0.025*sin(2*PI*(1120+75*sin(2*PI*1.2*t))*t)*abs(sin(2*PI*1.7*t))+0.014*sin(2*PI*(1750+110*sin(2*PI*1.5*t))*t)*abs(sin(2*PI*1.1*t)):s=48000:d={duration}"
-            filt = "lowpass=f=2800,highpass=f=100"
-        elif name == "zoo":
-            source = f"aevalsrc=0.026*sin(2*PI*(1750+420*sin(2*PI*1.15*t))*t)*abs(sin(2*PI*0.72*t))+0.018*sin(2*PI*(2350+560*sin(2*PI*0.83*t))*t)*abs(sin(2*PI*0.51*t))+0.010*sin(2*PI*(3100+300*sin(2*PI*1.4*t))*t)*abs(sin(2*PI*0.38*t)):s=48000:d={duration}"
-            filt = "highpass=f=900,lowpass=f=5200"
-        elif name == "clinic":
-            source = f"aevalsrc=0.009*sin(2*PI*60*t)+0.006*sin(2*PI*120*t)+0.012*sin(2*PI*880*t)*(0.5+0.5*sin(2*PI*0.42*t)):s=48000:d={duration}"
-            filt = "lowpass=f=1600,highpass=f=45"
-        elif name == "library":
-            source = f"aevalsrc=0.0018*sin(2*PI*120*t)+0.001*sin(2*PI*240*t):s=48000:d={duration}"
-            filt = "lowpass=f=900"
-        elif name == "school":
-            source = f"aevalsrc=0.045*sin(2*PI*(130+12*sin(2*PI*1.0*t))*t)*abs(sin(2*PI*1.5*t))+0.030*sin(2*PI*(620+45*sin(2*PI*1.2*t))*t)*abs(sin(2*PI*1.2*t))+0.020*sin(2*PI*(1450+75*sin(2*PI*1.3*t))*t)*abs(sin(2*PI*1.6*t)):s=48000:d={duration}"
-            filt = "lowpass=f=3400,highpass=f=100"
-        elif name == "museum":
-            source = f"anoisesrc=color=pink:amplitude=0.009:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1600,highpass=f=180"
-        elif name == "hotel":
-            source = f"anoisesrc=color=pink:amplitude=0.018:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=1000:w=1700,lowpass=f=3000"
-        elif name == "church":
-            source = f"anoisesrc=color=pink:amplitude=0.012:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1900,highpass=f=120"
-        elif name == "park":
-            source = f"anoisesrc=color=brown:amplitude=0.028:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=2200,highpass=f=160,tremolo=f=0.2:d=0.35"
-        elif name == "pool":
-            source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=2600,highpass=f=120,tremolo=f=0.7:d=0.28"
-        elif name == "bus":
-            source = f"anoisesrc=color=brown:amplitude=0.065:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=850,highpass=f=45,tremolo=f=0.35:d=0.4"
-        elif name == "construction":
-            source = f"anoisesrc=color=pink:amplitude=0.065:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=300,lowpass=f=4200,tremolo=f=4:d=0.45"
-        elif name == "theater":
-            source = f"anoisesrc=color=pink:amplitude=0.02:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=950:w=1700"
-        elif name == "gym":
-            source = f"anoisesrc=color=pink:amplitude=0.025:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1800,highpass=f=180"
-        elif name == "market":
-            source = f"aevalsrc=0.050*sin(2*PI*(125+12*sin(2*PI*1.1*t))*t)*abs(sin(2*PI*1.5*t))+0.036*sin(2*PI*(610+45*sin(2*PI*1.3*t))*t)*abs(sin(2*PI*1.2*t))+0.024*sin(2*PI*(1280+80*sin(2*PI*1.1*t))*t)*abs(sin(2*PI*1.7*t))+0.016*sin(2*PI*(1960+105*sin(2*PI*1.4*t))*t)*abs(sin(2*PI*1.3*t)):s=48000:d={duration}"
-            filt = "lowpass=f=3200,highpass=f=130"
-        elif name == "mall":
-            source = f"aevalsrc=0.040*sin(2*PI*(132+8*sin(2*PI*1.0*t))*t)*abs(sin(2*PI*1.5*t))+0.026*sin(2*PI*(570+36*sin(2*PI*1.3*t))*t)*abs(sin(2*PI*1.1*t))+0.018*sin(2*PI*(1180+55*sin(2*PI*1.2*t))*t)*abs(sin(2*PI*1.4*t)):s=48000:d={duration}"
-            filt = "lowpass=f=2800,highpass=f=110"
-        elif name == "restaurant":
-            source = f"aevalsrc=0.045*sin(2*PI*(120+10*sin(2*PI*1.0*t))*t)*abs(sin(2*PI*1.4*t))+0.028*sin(2*PI*(550+42*sin(2*PI*1.2*t))*t)*abs(sin(2*PI*1.2*t))+0.018*sin(2*PI*(1320+65*sin(2*PI*1.1*t))*t)*abs(sin(2*PI*1.6*t)):s=48000:d={duration}"
-            filt = "lowpass=f=3000,highpass=f=100"
-        elif name == "kitchen":
-            source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=700,lowpass=f=5200,tremolo=f=2.5:d=0.3"
-        elif name == "workshop":
-            source = f"anoisesrc=color=pink:amplitude=0.045:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=500,lowpass=f=5000"
-        elif name == "night":
-            source = f"anoisesrc=color=white:amplitude=0.008:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1200"
-        elif name == "ocean":
-            source = f"anoisesrc=color=pink:amplitude=0.085:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1500,highpass=f=90,tremolo=f=0.18:d=0.72"
-        elif name == "river":
-            source = f"anoisesrc=color=pink:amplitude=0.06:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=2600,highpass=f=140"
-        elif name == "fire":
-            source = f"anoisesrc=color=brown:amplitude=0.045:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=500,lowpass=f=4200,tremolo=f=5:d=0.65"
-        elif name == "stadium":
-            source = f"anoisesrc=color=pink:amplitude=0.04:sample_rate=48000:duration={duration}"
-            filt = "bandpass=f=850:w=1400"
-        elif name == "subway":
-            source = f"anoisesrc=color=brown:amplitude=0.05:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=700,highpass=f=45,tremolo=f=0.7:d=0.5"
-        elif name == "office":
-            source = f"anoisesrc=color=pink:amplitude=0.012:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1400,highpass=f=250"
-        elif name == "farm":
-            source = f"anoisesrc=color=brown:amplitude=0.035:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=1800"
-        elif name == "space":
-            source = f"anoisesrc=color=brown:amplitude=0.018:sample_rate=48000:duration={duration}"
-            filt = "lowpass=f=480,tremolo=f=0.08:d=0.8"
-        elif name == "insects":
-            source = f"anoisesrc=color=white:amplitude=0.018:sample_rate=48000:duration={duration}"
-            filt = "highpass=f=3200,lowpass=f=9000,tremolo=f=6:d=0.8"
-        else:
-            continue
-        inputs += ["-f", "lavfi", "-i", source]
-        idx = len(inputs) // 4 - 1
-        filters.append(f"[{idx}:a]{filt},volume=0.82[a{idx}]")
-    if not inputs:
+        for asset in AMBIENCE_ASSETS.get(name, ()):
+            if asset not in selected:
+                selected.append(asset)
+    if not selected:
         _run(["ffmpeg", "-y", "-f", "lavfi", "-i",
               f"anullsrc=r=48000:cl=stereo:d={duration}", "-t", duration, target])
         return
-    labels = "".join(f"[a{i}]" for i in range(len(filters)))
-    filters.append(f"{labels}amix=inputs={len(filters)}:duration=longest:normalize=0,volume=0.88[out]")
+    inputs, filters, labels = [], [], []
+    fade = min(0.06, max(0.01, duration / 5))
+    fade_out_start = max(0.0, duration - fade)
+    levels = {
+        "rain": (80, 9000, 0.58), "forest": (70, 11000, 0.48),
+        "birds": (450, 11000, 0.46), "cafe": (100, 9000, 0.44),
+        "city": (55, 11000, 0.48), "engine": (35, 7000, 0.50),
+        "workshop": (75, 9000, 0.46), "door": (100, 7500, 0.60),
+        "water": (80, 10000, 0.55),
+    }
+    for index, name in enumerate(selected):
+        path = _natural_audio_file(name)
+        inputs += ["-stream_loop", "-1", "-i", str(path)]
+        low, high, gain = levels[name]
+        filters.append(
+            f"[{index}:a]aresample=48000,highpass=f={low},lowpass=f={high},"
+            f"volume={gain},atrim=duration={duration}[a{index}]"
+        )
+        labels.append(f"[a{index}]")
+    filters.append(
+        "".join(labels) + f"amix=inputs={len(labels)}:duration=longest:normalize=0,"
+        f"alimiter=limit=0.92,afade=t=in:d={fade:.3f},"
+        f"afade=t=out:st={fade_out_start:.3f}:d={fade:.3f}[out]"
+    )
     _run(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(filters),
           "-map", "[out]", "-t", duration, "-ar", 48000, "-ac", 2, target])
+
 
 def _write_sfx(names, duration, target):
     inputs, labels = [], []
