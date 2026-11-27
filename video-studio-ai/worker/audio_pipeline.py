@@ -52,9 +52,9 @@ AMBIENCE_ASSETS = {
     "cafe": ("cafe",), "market": ("cafe",), "mall": ("cafe",),
     "restaurant": ("cafe",), "school": ("cafe",), "hotel": ("cafe",),
     "crowd": ("cafe",), "zoo": ("forest", "birds"), "park": ("forest", "birds"),
-    "farm": ("forest", "birds"), "insects": ("forest",),
-    "construction": ("workshop",), "workshop": ("workshop",), "kitchen": ("workshop",),
-    "river": ("water",), "water": ("water",), "pool": ("water",), "ocean": ("water",),
+    "farm": ("forest", "birds"),
+    "construction": ("workshop",), "workshop": ("workshop",),
+    "river": ("water",), "water": ("water",),
 }
 
 def _natural_audio_file(name):
