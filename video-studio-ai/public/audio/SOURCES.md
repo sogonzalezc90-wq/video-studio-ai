@@ -7,6 +7,7 @@ Los archivos de audio se descargan durante el despliegue desde Wikimedia Commons
 | rain.ogg | Lluvia real | ジダネ | Dominio público: https://commons.wikimedia.org/wiki/File:Rain.ogg |
 | forest.ogg | Ambiente de bosque, viento y aves | nille | Dominio público (PDSounds): https://commons.wikimedia.org/wiki/File:20090610_0_ambience.ogg |
 | birds.ogg | Canto de aves | Barracuda1983 | Dominio público: https://commons.wikimedia.org/wiki/File:Birds_forest.ogg |
+| footsteps.ogg | Pasos caminando sobre un sendero | tball74 | Dominio público: https://commons.wikimedia.org/wiki/File:Forest_track.ogg |
 | cafe.ogg | Cafetería y conversaciones lejanas | Marble Toast | CC0 1.0: https://commons.wikimedia.org/wiki/File:Cafe_ambiance.ogg |
 | city.ogg | Tráfico y calle urbana en Ciudad de México | Sallyamane | CC BY-SA 4.0: https://commons.wikimedia.org/wiki/File:Sonido_del_centro_de_la_ciudad_a_las_8_de_la_ma%C3%B1ana.ogg |
 | engine.ogg | Motor V8: arranque, aceleración y ralentí | lmartins | CC BY 4.0: https://commons.wikimedia.org/wiki/File:Maserati_GranTurismo_S_Exhaust.ogg |
