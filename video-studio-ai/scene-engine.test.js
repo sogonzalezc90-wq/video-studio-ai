@@ -174,7 +174,7 @@ test("recognizes screenplay dialogue with em dash and narrated quotation forms",
 });
 
 test("exposes the current audio engine version", () => {
-  assert.equal(engine.audioVersion, "20261127-audio8");
+  assert.equal(engine.audioVersion, "20261127-natural1");
 });
 
 test("audio engine uses a plucked score and pink-noise ambience rather than a sustained drone", () => {
@@ -182,5 +182,16 @@ test("audio engine uses a plucked score and pink-noise ambience rather than a su
   assert.match(source, /function addMusicPluck/);
   assert.match(source, /Pink\/brown-leaning ambience/);
   assert.match(source, /compressor\.threshold\.value=-12/);
-  assert.match(source, /audioVersion:"20261127-audio8"/);
+  assert.match(source, /audioVersion:"20261127-natural1"/);
+});
+
+
+test("natural sound library exposes real recorded files for core scene cues", () => {
+  const library = fs.readFileSync("public/natural-audio.js", "utf8");
+  assert.match(library, /rain: "\/audio\/rain\.ogg"/);
+  assert.match(library, /cafe: "\/audio\/cafe\.ogg"/);
+  assert.match(library, /engine: "\/audio\/engine\.ogg"/);
+  assert.match(library, /city: "\/audio\/city\.ogg"/);
+  assert.match(library, /footsteps: "\/audio\/footsteps\.ogg"/);
+  assert.match(library, /decodeAudioData/);
 });
