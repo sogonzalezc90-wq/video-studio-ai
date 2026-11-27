@@ -20,7 +20,7 @@ jobs:
       - name: Wait for Cloudflare Pages and verify contextual audio deployment
         env:
           PRODUCTION_URL: https://video-studio-ai.pages.dev
-          ASSET_VERSION: "20261126-audio3"
+          ASSET_VERSION: "20261127-audio4"
         run: |
           set -euo pipefail
           for attempt in $(seq 1 24); do
@@ -28,7 +28,10 @@ jobs:
               if ! grep -q "/scene-engine.js?v=$ASSET_VERSION" <<< "$html"; then
                 echo "Attempt $attempt/24: waiting for the latest production asset version"
               elif scene=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/scene-engine.js?v=$ASSET_VERSION"); then
-                if grep -q 'addMurmur' <<< "$scene" \
+                if grep -q 'audioVersion:"20261127-audio4"' <<< "$scene" \\
+                  && grep -q 'function addMurmur' <<< "$scene" \\
+                  && grep -q 'function addBirdChirps' <<< "$scene" \\
+                  && grep -q 'function addEngineRev' <<< "$scene" \\
                   && grep -q 'addBirdChirps' <<< "$scene" \
                   && grep -q 'ambiente_zoologico' <<< "$scene" \
                   && grep -q 'ambiente_consultorio' <<< "$scene" \
@@ -50,7 +53,7 @@ jobs:
                   && grep -q 'ambiente_gimnasio' <<< "$scene"; then
                   renderer=$(curl --fail --silent --show-error --location --connect-timeout 4 --max-time 8 "$PRODUCTION_URL/film-renderer.js?v=$ASSET_VERSION")
                   if grep -q 'cueMurmur' <<< "$renderer" \
-                    && grep -q 'limiter.threshold.value=-18' <<< "$renderer" \
+                    && grep -q 'limiter.threshold.value=-22' <<< "$renderer" \\
                     && grep -q 'ambiente_zoologico' <<< "$renderer" \
                     && grep -q 'equipo_medico' <<< "$renderer" \
                     && grep -q 'caja_registradora' <<< "$renderer" \
