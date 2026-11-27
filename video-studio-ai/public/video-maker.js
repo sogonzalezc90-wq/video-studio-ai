@@ -102,16 +102,22 @@
     const voiceFilter=context.createBiquadFilter(),voiceCompressor=context.createDynamicsCompressor();
     source.buffer=decoded;
     // Preserve natural speech speed; normalize quiet TTS output before a gentle compressor.
-    let sumSquares=0,samples=0;
+    let sumSquares=0,samples=0,peak=0;
     for(let channel=0;channel<decoded.numberOfChannels;channel++){
-      const data=decoded.getChannelData(channel),stride=Math.max(1,Math.floor(data.length/12000));
-      for(let i=0;i<data.length;i+=stride){sumSquares+=data[i]*data[i];samples++;}
+      const data=decoded.getChannelData(channel),stride=Math.max(1,Math.floor(data.length/16000));
+      for(let i=0;i<data.length;i+=stride){
+        const sample=Math.abs(data[i]);sumSquares+=sample*sample;samples++;peak=Math.max(peak,sample);
+      }
     }
     const rms=Math.sqrt(sumSquares/Math.max(1,samples));
-    voiceGain.gain.value=Math.min(4.5,Math.max(1.25,.19/Math.max(.001,rms)));
-    voiceFilter.type="highpass";voiceFilter.frequency.value=75;
-    voiceCompressor.threshold.value=-18;voiceCompressor.knee.value=12;
-    voiceCompressor.ratio.value=3;voiceCompressor.attack.value=.003;voiceCompressor.release.value=.18;
+    if(decoded.duration<0.15||rms<0.0005||peak<0.002)
+      throw new Error("El motor de voz devolvió audio vacío o prácticamente silencioso. No se exportará un video sin voz.");
+    // Target a clear speech level while keeping decoded peaks below digital clipping.
+    const normalizedGain=Math.min(8,.24/Math.max(.0001,rms),.92/Math.max(.0001,peak));
+    voiceGain.gain.value=Math.max(.75,normalizedGain);
+    voiceFilter.type="highpass";voiceFilter.frequency.value=85;
+    voiceCompressor.threshold.value=-20;voiceCompressor.knee.value=10;
+    voiceCompressor.ratio.value=4;voiceCompressor.attack.value=.003;voiceCompressor.release.value=.2;
     source.playbackRate.value=1;
     source.connect(voiceGain);voiceGain.connect(voiceFilter);voiceFilter.connect(voiceCompressor);voiceCompressor.connect(destination);
     // Start after MediaRecorder has begun so the first syllable cannot be missed.
@@ -159,6 +165,7 @@
         const story=$("video-story")?.value.trim()||"";
         const analysis=window.VSASceneEngine?.analyze(story)||{scenes:[],counts:{}};
         hasDialogue=Boolean(analysis.hasDialogue);
+        if(!hasDialogue)setMessage("No se detectaron líneas de diálogo. Este clip tendrá música y efectos, pero no voz hablada. Para incluir voces, escribe las intervenciones como: Personaje: texto.");
         if(!window.VSASceneEngine?.buildAudio)
           throw new Error("El motor de sonido no está disponible. Actualiza la página con Ctrl+F5; no se generará un video con zumbido de sustitución.");
         stopAudio=window.VSASceneEngine.buildAudio(audioContext,destination,duration,analysis);
