@@ -173,22 +173,6 @@
     ].filter(Boolean).join("\n\n");
   }
 
-  function noiseBuffer(ctx,seconds=2){
-    const length=Math.max(1,Math.floor(ctx.sampleRate*seconds)),b=ctx.createBuffer(1,length,ctx.sampleRate),d=b.getChannelData(0);
-    // Pink/brown-leaning ambience instead of full-band white noise (the latter resembles radio static).
-    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,peak=0;
-    for(let i=0;i<length;i++){
-      const white=Math.random()*2-1;
-      b0=.99886*b0+white*.0555179;b1=.99332*b1+white*.0750759;
-      b2=.969*b2+white*.153852;b3=.8665*b3+white*.3104856;
-      b4=.55*b4+white*.5329522;b5=-.7616*b5-white*.016898;
-      const pink=(b0+b1+b2+b3+b4+b5+b6+white*.5362)*.11;
-      b6=white*.115926;d[i]=pink;peak=Math.max(peak,Math.abs(pink));
-    }
-    const scale=peak>.0001?.72/peak:1;
-    for(let i=0;i<length;i++)d[i]*=scale;
-    return b;
-  }
   function addMusicPluck(ctx,dest,when,frequency,duration,volume=.035){
     const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
     osc.type="triangle";osc.frequency.setValueAtTime(frequency,when);
@@ -207,58 +191,6 @@
     g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(vol,when+Math.min(.08,dur/3));
     g.gain.setValueAtTime(vol,when+dur*.65);g.gain.exponentialRampToValueAtTime(.0001,when+dur);
     o.connect(g);g.connect(dest);o.start(when);o.stop(when+dur+.02);
-  }
-  function noise(ctx,dest,when,dur,vol=.02,filterType="lowpass",freq=900){
-    const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();
-    src.buffer=noiseBuffer(ctx,Math.max(.2,dur));f.type=filterType;f.frequency.value=freq;
-    g.gain.setValueAtTime(.0001,when);g.gain.linearRampToValueAtTime(vol,when+.25);
-    g.gain.setValueAtTime(vol,when+Math.max(.26,dur-.3));g.gain.linearRampToValueAtTime(.0001,when+dur);
-    src.connect(f);f.connect(g);g.connect(dest);src.start(when);src.stop(when+dur);
-  }
-  function addMurmur(ctx,dest,when,duration,volume=.004){
-    // A soft, speech-shaped crowd bed: harmonic formants with slow syllabic movement,
-    // rather than broadband white noise that sounds like radio static.
-    const voices=[{base:118,formant:520},{base:164,formant:980},{base:205,formant:1480}];
-    voices.forEach((v,index)=>{
-      const osc=ctx.createOscillator(),formant=ctx.createBiquadFilter(),gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
-      osc.type="sawtooth";osc.frequency.value=v.base+(Math.random()*14-7);
-      formant.type="bandpass";formant.frequency.value=v.formant;formant.Q.value=1.2;
-      lfo.type="sine";lfo.frequency.value=.7+index*.23;depth.gain.value=volume*.48;
-      gain.gain.value=volume*.42;
-      lfo.connect(depth);depth.connect(gain.gain);osc.connect(formant);formant.connect(gain);gain.connect(dest);
-      osc.start(when);lfo.start(when);osc.stop(when+duration);lfo.stop(when+duration);
-    });
-  }
-  function addBirdChirps(ctx,dest,when,duration){
-    for(let t=.25;t<duration;t+=1.35+Math.random()*.8){
-      const at=when+t,osc=ctx.createOscillator(),gain=ctx.createGain();
-      osc.type="sine";osc.frequency.setValueAtTime(1900+Math.random()*500,at);
-      osc.frequency.exponentialRampToValueAtTime(2700+Math.random()*700,at+.12);
-      osc.frequency.exponentialRampToValueAtTime(1500+Math.random()*400,at+.28);
-      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.009,at+.04);
-      gain.gain.exponentialRampToValueAtTime(.0001,at+.3);
-      osc.connect(gain);gain.connect(dest);osc.start(at);osc.stop(at+.32);
-    }
-  }
-  function addEngineRev(ctx,dest,when,duration,volume=.025){
-    const osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
-    osc.type="sawtooth";osc.frequency.setValueAtTime(65,when);
-    osc.frequency.exponentialRampToValueAtTime(190,when+duration*.55);
-    osc.frequency.exponentialRampToValueAtTime(82,when+duration);
-    filter.type="lowpass";filter.frequency.value=520;
-    gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(volume,when+.4);
-    gain.gain.setValueAtTime(volume,when+duration*.55);gain.gain.linearRampToValueAtTime(.0001,when+duration);
-    osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+duration+.02);
-  }
-  function addPassingTraffic(ctx,dest,when,duration){
-    for(let t=.5;t<duration;t+=3.2){
-      const at=when+t,osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
-      osc.type="sawtooth";osc.frequency.setValueAtTime(95,at);osc.frequency.exponentialRampToValueAtTime(48,at+1.8);
-      filter.type="lowpass";filter.frequency.value=420;
-      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.018,at+.7);
-      gain.gain.linearRampToValueAtTime(.0001,at+2.2);
-      osc.connect(filter);filter.connect(gain);gain.connect(dest);osc.start(at);osc.stop(at+2.25);
-    }
   }
   function addGlassClinks(ctx,dest,when,count=3){
     for(let k=0;k<count;k++){
