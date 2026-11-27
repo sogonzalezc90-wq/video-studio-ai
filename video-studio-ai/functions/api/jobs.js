@@ -253,6 +253,7 @@ async function createVideoJob(request,env,body,auth) {
     : {source:"production_manifest_no_dialogue",dialogues:[],effects:[]};
   const payload={
     prompt,audio_script:audioScript,production_manifest:productionManifest,
+    speechify_audio_batch_id:speechifyBatchId,
     requested_resolution:body.resolution==="1080p"?"1080p":"720p",
     visual_style:typeof body.style==="string"?body.style.slice(0,100):"Realista cinematográfico",
     voice:"none",
