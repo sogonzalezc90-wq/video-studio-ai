@@ -31,3 +31,13 @@ test("FLUX 2 Klein text-to-image requests use multipart input, not JSON", () => 
   assert.match(jobs, /multipart:\s*\{\s*body:multipartRequest\.body/);
   assert.doesNotMatch(jobs, /env\.AI\.run\(IMAGE_MODEL,\{prompt:strengthenPrompt\(prompt\),width:1024,height:576\}\)/);
 });
+
+
+test("film speech batches multiple character voices under one daily free quota reservation", () => {
+  assert.match(jobs, /action==="generate_speech_batch"/);
+  assert.match(jobs, /MAX_SPEECH_BATCH_CHARS=3500/);
+  assert.match(jobs, /rows\.length>40/);
+  assert.match(jobs, /reserveFreeAiQuota\(speechAuth,"speech"\)/);
+  assert.match(jobs, /workers-ai-free-allocation-only/);
+  assert.match(jobs, /speech_batch_too_large/);
+});
