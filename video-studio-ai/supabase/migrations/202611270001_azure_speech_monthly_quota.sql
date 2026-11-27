@@ -24,7 +24,7 @@ begin
   if auth.uid() is null then
     raise exception 'authenticated_user_required' using errcode = '42501';
   end if;
-  if p_characters is null or p_characters < 1 or p_characters > 21000 then
+  if p_characters is null or p_characters < 1 or p_characters > 24000 then
     raise exception 'invalid_character_reservation' using errcode = '22023';
   end if;
 
