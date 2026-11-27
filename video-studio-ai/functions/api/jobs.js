@@ -271,8 +271,9 @@ async function createVideoJob(request,env,body,auth) {
   const totalDialogueCharacters=plannedDialogues.reduce((sum,line)=>sum+Array.from(line.text).length,0);
   if(totalDialogueCharacters>MAX_SPEECH_BATCH_CHARS)
     return json({ok:false,error:"speechify_story_too_long",message:"Los diálogos superan el límite gratuito de 21,000 caracteres por película. Divide la historia en partes."},413);
-  if(plannedDialogues.some(line=>!line.voice))
-    return json({ok:false,error:"speechify_voice_not_assigned",message:"Uno o más personajes con diálogo no tienen una voz aprobada asignada. Abre el reparto, aprueba una voz y guárdala antes de enviar a Wan 2.2."},409);
+  const approvedVoiceIds=Array.isArray(body.approvedVoiceIds)?body.approvedVoiceIds.filter(value=>typeof value==="string"):[];
+  if(plannedDialogues.some(line=>!line.voice||!approvedVoiceIds.includes(line.voice)))
+    return json({ok:false,error:"speechify_voice_not_assigned",message:"Uno o más personajes con diálogo no tienen una voz aprobada en esta sesión. Abre el catálogo, aprueba la voz y guárdala en el reparto antes de enviar a Wan 2.2."},409);
   if(plannedDialogues.some(line=>Array.from(line.text).length>MAX_SPEECH_TEXT))
     return json({ok:false,error:"speechify_line_too_long",message:"Un diálogo individual supera 20,000 caracteres. Divide ese parlamento en intervenciones más cortas."},413);
   const jobId=crypto.randomUUID();
