@@ -594,11 +594,11 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         scenes[scene_index]["sfx_events"].append({
             "name": name, "local_position_seconds": local_time, "duration_seconds": event_length
         })
-    for item in script_lines[:40]:
+    for item in script_lines[:200]:
         if not isinstance(item, dict):
             continue
         speaker = str(item.get("speaker", "")).strip()[:50]
-        utterance = re.sub(r"\s+", " ", str(item.get("text", "")).strip())[:500]
+        utterance = re.sub(r"\s+", " ", str(item.get("text", "")).strip())[:20000]
         try:
             position = max(0.0, min(1.0, float(item.get("position", 0.5))))
         except (TypeError, ValueError):
@@ -628,11 +628,12 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
     voice_choice = str(voice_choice or "female").lower()
     if voice_choice not in ("female", "male", "none"):
         voice_choice = "female"
-    has_dialogue = voice_choice != "none" and any(scene["dialogues"] for scene in scenes)
-    voices = _ensure_models() if has_dialogue else {}
+    has_dialogue = any(scene["dialogues"] for scene in scenes)
+    needs_local_tts = any(not dialogue.get("audio_path") for scene in scenes for dialogue in scene["dialogues"])
+    voices = _ensure_models() if has_dialogue and needs_local_tts and voice_choice != "none" else {}
     if voice_choice == "none":
         for scene in scenes:
-            scene["dialogues"] = []
+            scene["dialogues"] = [dialogue for dialogue in scene["dialogues"] if dialogue.get("audio_path")]
     scene_files, manifest = [], []
     for scene in scenes:
         idx, scene_duration = scene["index"], scene["duration"]
@@ -655,10 +656,16 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
         dialogue_records = []
         dialogue_cursor = 0.35
         for line_index, dialogue in enumerate(scene["dialogues"]):
-            voice_key, pitch = _voice_key(dialogue["speaker"], speakers, voice_choice, dialogue.get("voice"))
-            speech_path = scene_dir / f"dialogue_{line_index:02d}.wav"
-            with wave.open(str(speech_path), "wb") as wav_file:
-                voices[voice_key].synthesize_wav(dialogue["text"], wav_file)
+            if dialogue.get("audio_path"):
+                speech_path = pathlib.Path(dialogue["audio_path"])
+                if not speech_path.is_file() or speech_path.stat().st_size < 512:
+                    raise RuntimeError(f"El audio Speechify de {dialogue['speaker']} no existe o está incompleto.")
+                voice_key, pitch = str(dialogue.get("voice") or "speechify"), 1.0
+            else:
+                voice_key, pitch = _voice_key(dialogue["speaker"], speakers, voice_choice, dialogue.get("voice"))
+                speech_path = scene_dir / f"dialogue_{line_index:02d}.wav"
+                with wave.open(str(speech_path), "wb") as wav_file:
+                    voices[voice_key].synthesize_wav(dialogue["text"], wav_file)
             speech_duration = _duration(str(speech_path))
             # Honor the AI screenplay's normalized position when present; otherwise
             # place explicit dialogue sequentially without cutting speech off.
@@ -682,6 +689,7 @@ def build_audio_track(prompt, duration, work_dir, audio_script=None, voice_choic
             mix_labels.append(f"[{label}]")
             dialogue_records.append({
                 "speaker": dialogue["speaker"], "voice": voice_key,
+                "provider": "speechify" if dialogue.get("audio_path") else "piper",
                 "pitch_variant": pitch, "text": dialogue["text"],
                 "scene_offset_seconds": round(start, 3),
             })
