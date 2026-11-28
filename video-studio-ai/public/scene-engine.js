@@ -365,12 +365,17 @@
         const shotDialogues=(Array.isArray(currentShot.dialogues)&&currentShot.dialogues.length?currentShot.dialogues:
           sceneRange.shotRanges.length===1?(sceneRange.scene.dialogues||[]):[]);
         const dialogueCenter=(shotRange.start+shotRange.end)/2;
-        if(dialogueCenter>=startSeconds&&dialogueCenter<endSeconds)
+        if(dialogueCenter>=startSeconds&&dialogueCenter<endSeconds){
+          const slot=shotRange.end-shotRange.start;
+          const weights=shotDialogues.map(line=>Math.max(1.1,String(line.text||"").length/14));
+          const totalWeight=weights.reduce((sum,value)=>sum+value,0)||1;
+          let consumedWeight=0;
           shotDialogues.forEach((line,lineIndex)=>{
-            const slot=shotRange.end-shotRange.start;
-            const lineTime=shotRange.start+slot*((lineIndex+0.5)/Math.max(1,shotDialogues.length));
+            const lineTime=shotRange.start+Math.min(Math.max(.25,slot*.72),.35+Math.max(0,slot-.7)*(consumedWeight/totalWeight));
             dialogues.push({character:line.character,text:line.text,atSeconds:Math.max(0,lineTime-startSeconds)});
+            consumedWeight+=weights[lineIndex];
           });
+        }
       });
       const audioCues=[...new Set(overlappingShots.flatMap(({sceneRange,shotRange})=>
         audioCuesFor(sceneRange.scene,{title:shotRange.shot.title||"Toma",description:shotRange.shot.description||sceneRange.scene.description||""})
@@ -389,5 +394,5 @@
     return {targetSeconds,maxSegmentSeconds:segmentDuration,totalSegments:segments.length,scenes:sourceScenes.length,segments};
   }
 
-  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan,audioVersion:"20261127-natural2"};
+  window.VSASceneEngine={analyze,buildImagePrompt,buildAudio,buildProductionPlan,audioVersion:"20261127-dialoguefix1"};
 })();
