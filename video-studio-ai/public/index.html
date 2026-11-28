@@ -104,6 +104,15 @@
         <p class="muted">Consulta el catálogo dinámico de Speechify para español de México (es-MX). La cantidad de personajes de tus historias no queda limitada por el número de voces; puedes reutilizar una voz aprobada o elegir otra.</p>
         <p class="hint">Motor compartido por los videos 2D y neuronales Wan 2.2: Speechify Build · Simba 3.0 · es-MX. El plan Free muestra 500,000 caracteres mensuales; VIDEO STUDIO AI se detendrá preventivamente en 450,000. Las muestras oficiales no consumen caracteres de síntesis. Solo las voces que apruebes podrán asignarse; la misma asignación de personaje se conserva en ambos motores. No hay fallback ni servicios de pago.</p>
         <button id="voice-preview-generate" class="primary" type="button">Consultar catálogo y escuchar muestras</button>
+        <div class="speechify-player-panel">
+          <h4>Reproductor de prueba Speechify</h4>
+          <p class="hint">Escribe una frase real de tu guion, selecciona una voz aprobada y genera un MP3 para escucharlo antes de producir el video. Esta prueba sí consume caracteres de tu cuota gratuita y se contabiliza en el límite preventivo de 450,000.</p>
+          <label>Texto para escuchar<textarea id="speechify-test-text" rows="3" maxlength="1200">Hola, esta es una prueba de voz en español de México para VIDEO STUDIO AI. Comprueba la claridad, pronunciación, volumen y naturalidad antes de utilizar esta voz en tu película.</textarea></label>
+          <label>Voz aprobada para la prueba<select id="speechify-test-voice"><option value="">Primero consulta el catálogo y aprueba una voz</option></select></label>
+          <button id="speechify-test-generate" class="secondary" type="button">Generar y reproducir prueba de voz</button>
+          <p id="speechify-test-message" class="message" role="status"></p>
+          <audio id="speechify-test-player" class="speechify-audio-player" controls preload="none"></audio>
+        </div>
         <p id="voice-preview-message" class="message" role="status"></p>
         <div id="voice-preview-results" aria-live="polite"></div>
       </section>
