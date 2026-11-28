@@ -558,8 +558,9 @@
     if(!Array.isArray(approved))approved=[];
     window.VSAApprovedSpeechifyVoices=approved.filter(id=>voices.some(voice=>voice.id===id));
     window.VSAProductionEngine?.setVoices?.(window.VSAApprovedSpeechifyVoices);
-    const select=$("video-voice");
-    if(select){
+    ["video-voice","speechify-test-voice"].forEach(selectId=>{
+      const select=$(selectId);
+      if(!select)return;
       const previous=select.value;
       select.replaceChildren();
       const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona una voz aprobada";select.append(placeholder);
@@ -567,7 +568,7 @@
         const option=document.createElement("option");option.value=voice.id;option.textContent=voice.display_name+" · "+voice.gender+" · "+voice.locale;select.append(option);
       });
       if(window.VSAApprovedSpeechifyVoices.includes(previous))select.value=previous;
-    }
+    });
   }
   async function loadSpeechifyVoices(force=false) {
     if(!force&&Array.isArray(window.VSASpeechifyVoices)&&window.VSASpeechifyVoices.length){
@@ -598,16 +599,7 @@
     localStorage.setItem("vsa_speechify_approved_voices",JSON.stringify(window.VSAApprovedSpeechifyVoices));
     window.VSAProductionEngine?.setVoices?.(window.VSAApprovedSpeechifyVoices);
     button.textContent=approved.has(voice.id)?"Quitar aprobación":"Aprobar voz para personajes";
-    const select=$("video-voice");
-    if(select){
-      const previous=select.value;
-      select.replaceChildren();
-      const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona una voz aprobada";select.append(placeholder);
-      (window.VSASpeechifyVoices||[]).filter(item=>approved.has(item.id)).forEach(item=>{
-        const option=document.createElement("option");option.value=item.id;option.textContent=item.display_name+" · "+item.gender+" · "+item.locale;select.append(option);
-      });
-      if(approved.has(previous))select.value=previous;
-    }
+    applySpeechifyVoiceState(window.VSASpeechifyVoices||[]);
     window.VSARenderActiveProduction?.();
   }
 
@@ -648,6 +640,28 @@
       button.disabled=false;
       button.textContent="Consultar catálogo y escuchar muestras";
     }
+  }
+
+  async function generateSpeechifyTestAudio() {
+    const button=$("speechify-test-generate"),text=$("speechify-test-text")?.value.trim()||"";
+    const voice=$("speechify-test-voice")?.value||"",player=$("speechify-test-player");
+    try{
+      if(!text)throw new Error("Escribe el texto que quieres escuchar.");
+      if(Array.from(text).length>1200)throw new Error("La prueba admite hasta 1,200 caracteres.");
+      if(!voice||!(window.VSAApprovedSpeechifyVoices||[]).includes(voice))throw new Error("Selecciona una voz que hayas aprobado en el catálogo.");
+      const token=await window.VSAGetSessionToken();
+      button.disabled=true;button.textContent="Generando audio Speechify…";
+      message("speechify-test-message","Generando "+Array.from(text).length+" caracteres. Esta síntesis descuenta caracteres de tu cuota gratuita.");
+      const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+token},body:JSON.stringify({action:"generate_speech",text,voice})});
+      if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.message||"Speechify no pudo generar la prueba.");}
+      const blob=await response.blob();
+      if(blob.size<512)throw new Error("Speechify devolvió un audio vacío o incompleto.");
+      if(player.dataset.objectUrl)URL.revokeObjectURL(player.dataset.objectUrl);
+      const url=URL.createObjectURL(blob);player.src=url;player.dataset.objectUrl=url;
+      await player.play();
+      message("speechify-test-message","Audio generado · "+Array.from(text).length+" caracteres · "+(response.headers.get("x-vsa-model")||"Speechify")+" · Puedes volver a reproducirlo.");
+    }catch(error){message("speechify-test-message",error.message,true);}
+    finally{button.disabled=false;button.textContent="Generar y reproducir prueba de voz";}
   }
 
   async function submitWanJob() {
@@ -767,6 +781,7 @@
   $("diagnose-btn")?.addEventListener("click",diagnoseConnection);
   $("wan-queue-submit")?.addEventListener("click",submitWanJob);
   $("voice-preview-generate")?.addEventListener("click",generateVoicePreviews);
+  $("speechify-test-generate")?.addEventListener("click",generateSpeechifyTestAudio);
   $("wan-queue-refresh")?.addEventListener("click",loadWanJobs);
   $("wan-queue-clear")?.addEventListener("click",clearFinishedWanJobs);
   $("wan-open-kaggle")?.addEventListener("click",()=>{
