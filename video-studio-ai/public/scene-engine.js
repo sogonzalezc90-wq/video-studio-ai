@@ -77,17 +77,37 @@
   function parseDialogue(line) {
     const value=String(line||"").trim();
     if(!value||/^(?:sin diálogo|sin dialogo|no hay diálogo|no hay dialogo)\.?$/i.test(value)) return null;
-    // Accept screenplay forms such as "Diálogo: KIYOSHIMA (voz grave): «…»".
     const prefixed=value.match(/^(?:diálogo|dialogo)\s*:\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*:\s*[«“"]?(.+?)[»”"]?$/iu);
-    const direct=value.match(/^[-–—]?\s*([\p{L}][\p{L}\p{M} .'-]{1,35}?)(?:\s*\([^)]{1,100}\))?\s*(?::|—|–)\s*[«“"]?(.+?)[»”"]?$/u);
+    const direct=value.match(/^[-–—]?\s*([\p{L}][\p{L}\p{M} .'-]{0,35}?)(?:\s*\([^)]{1,100}\))?\s*(?::|—|–)\s*[«“"]?(.+?)[»”"]?$/u);
     const narrated=value.match(/^([\p{L}][\p{L}\p{M} .'-]{1,35}?)\s+(?:dice|responde|pregunta|grita|susurra|contesta|murmura)\s*[:,]?\s*[«“"](.+?)[»”"]$/iu);
     const m=prefixed||narrated||direct;
-    if(!m) return null;
-    const character=m[1].trim().replace(/\s+/g," ");
+    if(!m)return null;
+    const character=m[1].trim().replace(/\s+/g," ").replace(/^Personaje\s*\d+\s*[–—-]\s*/i,"").trim();
     const text=m[2].trim().replace(/[»”"]+$/,"").replace(/^[«“"]+/,"").trim();
-    if(/^(duraci[oó]n|formato|resoluci[oó]n|estilo|escena|toma|audio)$/i.test(character)) return null;
+    if(/^(duración|formato|resolución|estilo|escena|toma|audio|sincronización)$/i.test(character))return null;
     if(text.length<2||/^(?:sin diálogo|sin dialogo)$/i.test(text))return null;
     return {character,text};
+  }
+
+  function extractInlineDialogues(text) {
+    const source=String(text||"");
+    const rows=[];
+    const quoted=/(?:Personaje\s*\d+\s*[–—-]\s*)?([\p{L}][\p{L}\p{M} .'-]{0,35}?)\s*:\s*[\s\S]{0,260}?\b(?:dice|responde|pregunta|contesta|grita|susurra|murmura)\s*[:,]?\s*[«“"]([^»”"]{2,1200})[»”"]/giu;
+    let match;
+    while((match=quoted.exec(source))!==null){
+      const character=match[1].trim().replace(/\s+/g," ").replace(/^Personaje\s*\d+\s*[–—-]\s*/i,"").trim();
+      const spoken=match[2].trim();
+      if(character&&spoken&&!/^(audio|sincronización|sincronizacion|estilo|formato)$/i.test(character))
+        rows.push({character,text:spoken});
+    }
+    const direct=/(?:^|\n)\s*(?:Personaje\s*\d+\s*[–—-]\s*)?([\p{L}][\p{L}\p{M} .'-]{0,35})\s*:\s*[«“"]([^»”"]{2,1200})[»”"]/gimu;
+    while((match=direct.exec(source))!==null){
+      const character=match[1].trim().replace(/\s+/g," ").replace(/^Personaje\s*\d+\s*[–—-]\s*/i,"").trim();
+      const spoken=match[2].trim();
+      if(character&&spoken&&!rows.some(row=>row.character.toLocaleLowerCase()===character.toLocaleLowerCase()&&row.text===spoken))
+        rows.push({character,text:spoken});
+    }
+    return rows;
   }
   function analyze(input) {
     const rawText=String(input||"").trim();
@@ -138,6 +158,13 @@
       addLine(shot||scene,trim);
     }
 
+    if(inlineDialogues.length){
+      scenes.forEach(s=>{
+        s.dialogues=inlineDialogues.map(row=>({...row}));
+        if(s.shots.length===1)s.shots[0].dialogues=inlineDialogues.map(row=>({...row}));
+      });
+    }
+
     if(!scenes.length&&rawText){
       const chunks=rawText.split(/\n(?=[A-ZÁÉÍÓÚÑ][^\n]{2,60}\n)/);
       chunks.forEach((chunk,i)=>{const s=makeScene("Escena "+(i+1),i+1);s.description=chunk.trim();});
@@ -145,7 +172,9 @@
     scenes.forEach(s=>{
       const shotText=s.shots.map(x=>x.title+"\n"+x.description).join("\n\n");
       const text=[s.title,s.description,shotText].filter(Boolean).join("\n\n");
-      const c=classify(text);s.types=c.types;s.labels=c.labels;s.mood=c.mood;
+      s.semanticDescription=semanticText||s.title;
+      s.shots.forEach(item=>{item.semanticDescription=semanticText||item.title;});
+      const c=classify(semanticText||s.title);s.types=c.types;s.labels=c.labels;s.mood=c.mood;
       if(s.duration===null&&s.shots.length&&s.shots.every(x=>x.duration!==null))
         s.duration=s.shots.reduce((n,x)=>n+x.duration,0);
       if(!s.shots.length) s.shots=[{number:s.number+".1",title:s.title,description:s.description,duration:s.duration,dialogues:s.dialogues.slice()}];
@@ -243,9 +272,9 @@
   }
 
   function audioCuesFor(scene,shot) {
-    const shotTypes=classify([shot.title,shot.description].filter(Boolean).join("\n")).types;
-    // Keep only the parent scene's own location bed, then add this shot's actions.
-    const sceneContextTypes=classify([scene.title,scene.description].filter(Boolean).join("\n")).types;
+    const shotTypes=classify(shot.semanticDescription||"").types;
+    // Classify only story content; technical audio/synchronization instructions are not scene cues.
+    const sceneContextTypes=classify(scene.semanticDescription||scene.title||"").types;
     const types=new Set([...sceneContextTypes,...shotTypes]);
     const cueMap={
       car:"motor_automovil",
