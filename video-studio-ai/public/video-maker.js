@@ -85,7 +85,8 @@
         text:String(dialogue.text||"").trim(),
         voice:""
       })));
-    const dialogueRows=manifestRows.length?manifestRows:parsedRows;
+    // Prefer the freshly parsed script when a saved manifest was created by an older parser.
+    const dialogueRows=parsedRows.length>manifestRows.length?parsedRows:(manifestRows.length?manifestRows:parsedRows);
     if(!dialogueRows.length)return ()=>{};
     const totalCharacters=dialogueRows.reduce((sum,item)=>sum+Array.from(item.text).length,0);
     if(dialogueRows.length>20||totalCharacters>1200)throw new Error("El diálogo supera el límite de esta prueba 2D (20 intervenciones y 1,200 caracteres). Para películas largas utiliza Wan 2.2, que conserva las voces por personaje.");
