@@ -71,7 +71,7 @@
     $("app-panel").classList.remove("hidden");
     $("user-label").textContent = user?.email || "";
     await loadProjects();
-    try{await loadSpeechifyVoices();}catch(error){message("voice-preview-message","No se pudo cargar el catálogo Speechify: "+error.message,true);}
+    try{await loadSpeechifyVoices();await generateVoicePreviews();}catch(error){message("voice-preview-message","No se pudo cargar el catálogo Speechify: "+error.message,true);}
   }
   async function loadProjects() {
     const root=$("projects-list");
@@ -603,14 +603,27 @@
     window.VSARenderActiveProduction?.();
   }
 
+  function addSpeechifyApprovalButton(card,voice) {
+    const approved=(window.VSAApprovedSpeechifyVoices||[]).includes(voice.id);
+    const approve=document.createElement("button");
+    approve.type="button";approve.className="secondary";
+    approve.textContent=approved?"Quitar aprobación":"Aprobar voz para personajes";
+    approve.addEventListener("click",()=>{
+      approveSpeechifyVoice(voice,approve);
+      approve.textContent=(window.VSAApprovedSpeechifyVoices||[]).includes(voice.id)?"Quitar aprobación":"Aprobar voz para personajes";
+    });
+    card.append(approve);
+  }
+
   async function generateVoicePreviews() {
     const button=$("voice-preview-generate");
     const root=$("voice-preview-results");
+    if(!button||!root)return;
     try {
       button.disabled=true;
       button.textContent="Consultando catálogo mexicano…";
       root.replaceChildren();
-      message("voice-preview-message","Consultando las voces que realmente ofrece tu cuenta para español de México y Simba 3.0. Las muestras del catálogo no consumen caracteres de síntesis.");
+      message("voice-preview-message","Cargando automáticamente las voces compatibles con español de México y Simba 3.0. Escucha una muestra y aprueba cada voz que quieras asignar. Las muestras oficiales no consumen caracteres.");
       const voices=await loadSpeechifyVoices();
       if(!voices.length)throw new Error("Speechify no devolvió voces compatibles con español de México (es-MX) y Simba 3.0.");
       for(const voice of voices){
@@ -623,22 +636,42 @@
         if(voice.preview_audio){
           const player=document.createElement("audio");player.controls=true;player.preload="none";player.src=voice.preview_audio;player.style.cssText="display:block;width:100%;margin-top:10px";
           card.append(player);
-          const approve=document.createElement("button");approve.type="button";approve.className="secondary";
-          approve.textContent=(window.VSAApprovedSpeechifyVoices||[]).includes(voice.id)?"Quitar aprobación":"Aprobar voz para personajes";
-          approve.addEventListener("click",()=>approveSpeechifyVoice(voice,approve));
-          card.append(approve);
+          addSpeechifyApprovalButton(card,voice);
         }else{
-          const noPreview=document.createElement("p");noPreview.className="hint";noPreview.textContent="Speechify no proporcionó una muestra en español para esta voz; no se puede aprobar todavía.";
-          card.append(noPreview);
+          const note=document.createElement("p");note.className="hint";
+          note.textContent="Speechify no proporcionó una muestra oficial para esta voz. Puedes generar una muestra breve de prueba; se descontarán sus caracteres de tu cuota gratuita.";
+          card.append(note);
+          const sampleButton=document.createElement("button");sampleButton.type="button";sampleButton.className="secondary";
+          sampleButton.textContent="Generar muestra de voz para escuchar";
+          sampleButton.addEventListener("click",async()=>{
+            sampleButton.disabled=true;sampleButton.textContent="Generando muestra…";
+            try{
+              const token=await window.VSAGetSessionToken();
+              const sampleText="Hola, esta es una muestra de voz en español de México para comprobar claridad, pronunciación y naturalidad.";
+              const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+token},body:JSON.stringify({action:"generate_speech",text:sampleText,voice:voice.id})});
+              if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.message||"Speechify no pudo generar la muestra.");}
+              const blob=await response.blob();
+              if(blob.size<512)throw new Error("Speechify devolvió una muestra vacía.");
+              const player=document.createElement("audio");player.controls=true;player.preload="auto";player.src=URL.createObjectURL(blob);player.style.cssText="display:block;width:100%;margin-top:10px";
+              sampleButton.replaceWith(player);
+              addSpeechifyApprovalButton(card,voice);
+              message("voice-preview-message","Muestra generada para "+voice.display_name+". Escúchala y, si estás conforme, pulsa «Aprobar voz para personajes». Se consumieron "+Array.from(sampleText).length+" caracteres de tu cuota gratuita.");
+            }catch(error){message("voice-preview-message","No se pudo generar la muestra de "+voice.display_name+": "+error.message,true);sampleButton.disabled=false;sampleButton.textContent="Reintentar muestra de voz";}
+          });
+          card.append(sampleButton);
+          if((window.VSAApprovedSpeechifyVoices||[]).includes(voice.id))addSpeechifyApprovalButton(card,voice);
         }
         root.append(card);
       }
-      message("voice-preview-message","Catálogo cargado: "+voices.length+" voces es-MX compatibles con Simba 3.0. Escucha cada muestra y pulsa «Aprobar voz» para habilitarla en los selectores. Ninguna voz se ha asignado automáticamente.");
+      window.VSARenderActiveProduction?.();
+      const approvedCount=(window.VSAApprovedSpeechifyVoices||[]).length;
+      message("voice-preview-message","Catálogo cargado: "+voices.length+" voces es-MX. "+approvedCount+" voz/ voces aprobadas. Escucha las muestras y aprueba las que quieras; después aparecerán en Mecánico, Propietario y los demás personajes.");
     }catch(error){
-      message("voice-preview-message",error.message,true);
+      message("voice-preview-message","No se pudo cargar el catálogo Speechify: "+error.message,true);
+      throw error;
     }finally{
       button.disabled=false;
-      button.textContent="Consultar catálogo y escuchar muestras";
+      button.textContent="Actualizar catálogo y escuchar muestras";
     }
   }
 
