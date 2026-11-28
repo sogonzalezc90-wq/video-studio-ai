@@ -94,12 +94,16 @@
     const token=await window.VSAGetSessionToken(),fallbackVoice=$("video-voice")?.value||"";
     const characterVoices=new Map((manifest?.characters||[]).map(character=>[String(character.name||"").trim().toLocaleLowerCase(),String(character.voice||"").trim()]));
     const approved=new Set(window.VSAApprovedSpeechifyVoices||[]),prepared=[];
-    for(let index=0;index<dialogueRows.length;index++){
-      const line=dialogueRows[index],key=line.character.toLocaleLowerCase();
+    const resolvedRows=dialogueRows.map(line=>{
+      const key=line.character.toLocaleLowerCase();
       const assigned=line.voice||characterVoices.get(key)||"";
       const isNarration=/^(narrador|narradora|voz en off|locutor|locutora)$/i.test(line.character);
-      const speaker=assigned||(isNarration?fallbackVoice:"");
-      if(!speaker||!approved.has(speaker))throw new Error("Falta una voz aprobada asignada individualmente a «"+(line.character||"Personaje sin nombre")+"». El selector general inferior no sustituye las voces de los personajes.");
+      return {...line,speaker:assigned||(isNarration?fallbackVoice:"")};
+    });
+    const missingVoice=resolvedRows.find(line=>!line.speaker||!approved.has(line.speaker));
+    if(missingVoice)throw new Error("Falta una voz aprobada asignada individualmente a «"+(missingVoice.character||"Personaje sin nombre")+"». El selector general inferior no sustituye las voces de los personajes. No se consumieron caracteres de Speechify.");
+    for(let index=0;index<resolvedRows.length;index++){
+      const line=resolvedRows[index],speaker=line.speaker;
       setMessage("Speechify · preparando diálogo "+(index+1)+" de "+dialogueRows.length+" · "+line.character+"…");
       const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+token},body:JSON.stringify({action:"generate_speech",text:line.text,voice:speaker})});
       if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.message||(response.status===429?"Se alcanzó el límite gratuito de voz. No se realizó ningún cargo.":"Speechify no pudo generar el diálogo "+(index+1)+"."));}
