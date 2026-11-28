@@ -658,8 +658,8 @@
       if(blob.size<512)throw new Error("Speechify devolvió un audio vacío o incompleto.");
       if(player.dataset.objectUrl)URL.revokeObjectURL(player.dataset.objectUrl);
       const url=URL.createObjectURL(blob);player.src=url;player.dataset.objectUrl=url;
-      await player.play();
-      message("speechify-test-message","Audio generado · "+Array.from(text).length+" caracteres · "+(response.headers.get("x-vsa-model")||"Speechify")+" · Puedes volver a reproducirlo.");
+      player.play().catch(()=>{});
+      message("speechify-test-message","Audio generado · "+Array.from(text).length+" caracteres · "+(response.headers.get("x-vsa-model")||"Speechify")+" · Si no inicia automáticamente, pulsa Reproducir.");
     }catch(error){message("speechify-test-message",error.message,true);}
     finally{button.disabled=false;button.textContent="Generar y reproducir prueba de voz";}
   }
