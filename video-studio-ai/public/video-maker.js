@@ -79,31 +79,40 @@
     const token=await window.VSAGetSessionToken(),fallbackVoice=$("video-voice")?.value||"";
     const manifest=window.VSAActiveManifest;
     const characterVoices=new Map((manifest?.characters||[]).map(character=>[String(character.name||"").trim().toLocaleLowerCase(),String(character.voice||"")]));
-    const approved=new Set(window.VSAApprovedSpeechifyVoices||[]),sources=[];
-    let cursor=context.currentTime+1.1,scheduledSeconds=0;
+    const approved=new Set(window.VSAApprovedSpeechifyVoices||[]),prepared=[];
+    for(let index=0;index<dialogueRows.length;index++){
+      const line=dialogueRows[index],assigned=characterVoices.get(line.character.toLocaleLowerCase())||"";
+      const speaker=assigned&&approved.has(assigned)?assigned:fallbackVoice;
+      if(!speaker||!approved.has(speaker))throw new Error("El personaje «"+(line.character||"Sin nombre")+"» necesita una voz aprobada. Asigna una voz en el reparto o selecciona una voz general para este clip.");
+      setMessage("Speechify · preparando diálogo "+(index+1)+" de "+dialogueRows.length+" · "+line.character+"…");
+      const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+token},body:JSON.stringify({action:"generate_speech",text:line.text,voice:speaker})});
+      if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.message||(response.status===429?"Se alcanzó el límite gratuito de voz. No se realizó ningún cargo.":"Speechify no pudo generar el diálogo "+(index+1)+"."));}
+      const bytes=await response.arrayBuffer();
+      if(bytes.byteLength<512)throw new Error("Speechify devolvió un audio vacío para "+line.character+".");
+      const decoded=await context.decodeAudioData(bytes.slice(0));
+      let sumSquares=0,samples=0,peak=0;
+      for(let channel=0;channel<decoded.numberOfChannels;channel++){const data=decoded.getChannelData(channel),stride=Math.max(1,Math.floor(data.length/16000));for(let i=0;i<data.length;i+=stride){const sample=Math.abs(data[i]);sumSquares+=sample*sample;samples++;peak=Math.max(peak,sample);}}
+      const rms=Math.sqrt(sumSquares/Math.max(1,samples));
+      if(decoded.duration<.15||rms<.0005||peak<.002)throw new Error("Speechify devolvió audio silencioso para "+line.character+". Se canceló la exportación.");
+      prepared.push({decoded,character:line.character});
+      if(index<dialogueRows.length-1)await new Promise(resolve=>setTimeout(resolve,1100));
+    }
+    const scheduledSeconds=prepared.reduce((sum,item)=>sum+item.decoded.duration+.12,0);
+    if(scheduledSeconds>duration)throw new Error("Los diálogos necesitan "+Math.ceil(scheduledSeconds)+" s y el clip solo dura "+duration+" s. Reduce el texto o aumenta la duración.");
+    const sources=[];
+    let cursor=context.currentTime+1.1;
     try{
-      for(let index=0;index<dialogueRows.length;index++){
-        const line=dialogueRows[index],assigned=characterVoices.get(line.character.toLocaleLowerCase())||"";
-        const speaker=assigned&&approved.has(assigned)?assigned:fallbackVoice;
-        if(!speaker||!approved.has(speaker))throw new Error("El personaje «"+(line.character||"Sin nombre")+"» necesita una voz aprobada. Asigna una voz en el reparto o selecciona una voz general para este clip.");
-        setMessage("Speechify · preparando diálogo "+(index+1)+" de "+dialogueRows.length+" · "+line.character+"…");
-        const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+token},body:JSON.stringify({action:"generate_speech",text:line.text,voice:speaker})});
-        if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.message||(response.status===429?"Se alcanzó el límite gratuito de voz. No se realizó ningún cargo.":"Speechify no pudo generar el diálogo "+(index+1)+"."));}
-        const bytes=await response.arrayBuffer();
-        if(bytes.byteLength<512)throw new Error("Speechify devolvió un audio vacío para "+line.character+".");
-        const decoded=await context.decodeAudioData(bytes.slice(0));
-        let sumSquares=0,samples=0,peak=0;
-        for(let channel=0;channel<decoded.numberOfChannels;channel++){const data=decoded.getChannelData(channel),stride=Math.max(1,Math.floor(data.length/16000));for(let i=0;i<data.length;i+=stride){const sample=Math.abs(data[i]);sumSquares+=sample*sample;samples++;peak=Math.max(peak,sample);}}
-        const rms=Math.sqrt(sumSquares/Math.max(1,samples));
-        if(decoded.duration<.15||rms<.0005||peak<.002)throw new Error("Speechify devolvió audio silencioso para "+line.character+". Se canceló la exportación.");
+      for(const item of prepared){
         const source=context.createBufferSource(),gain=context.createGain(),filter=context.createBiquadFilter(),compressor=context.createDynamicsCompressor();
-        source.buffer=decoded;gain.gain.value=Math.max(.75,Math.min(8,.24/Math.max(.0001,rms),.92/Math.max(.0001,peak)));
+        source.buffer=item.decoded;
+        let sumSquares=0,samples=0,peak=0;
+        for(let channel=0;channel<item.decoded.numberOfChannels;channel++){const data=item.decoded.getChannelData(channel),stride=Math.max(1,Math.floor(data.length/16000));for(let i=0;i<data.length;i+=stride){const sample=Math.abs(data[i]);sumSquares+=sample*sample;samples++;peak=Math.max(peak,sample);}}
+        const rms=Math.sqrt(sumSquares/Math.max(1,samples));
+        gain.gain.value=Math.max(.75,Math.min(8,.24/Math.max(.0001,rms),.92/Math.max(.0001,peak)));
         filter.type="highpass";filter.frequency.value=85;compressor.threshold.value=-20;compressor.knee.value=10;compressor.ratio.value=4;compressor.attack.value=.003;compressor.release.value=.2;
-        source.connect(gain);gain.connect(filter);filter.connect(compressor);compressor.connect(destination);source.start(cursor);
-        sources.push({source,gain,filter,compressor});cursor+=decoded.duration+.12;scheduledSeconds+=decoded.duration+.12;
-        if(index<dialogueRows.length-1)await new Promise(resolve=>setTimeout(resolve,1100));
+        source.connect(gain);gain.connect(filter);filter.connect(compressor);compressor.connect(destination);
+        source.start(cursor);sources.push({source,gain,filter,compressor});cursor+=item.decoded.duration+.12;
       }
-      if(scheduledSeconds>duration)throw new Error("Los diálogos necesitan "+Math.ceil(scheduledSeconds)+" s y el clip solo dura "+duration+" s. Reduce el texto o aumenta la duración.");
       return ()=>sources.forEach(({source,gain,filter,compressor})=>{try{source.stop();}catch(_){}try{source.disconnect();gain.disconnect();filter.disconnect();compressor.disconnect();}catch(_){}});
     }catch(error){sources.forEach(({source,gain,filter,compressor})=>{try{source.stop();}catch(_){}try{source.disconnect();gain.disconnect();filter.disconnect();compressor.disconnect();}catch(_){}});throw error;}
   }
