@@ -92,7 +92,7 @@
   function extractInlineDialogues(text) {
     const source=String(text||"");
     const rows=[];
-    const quoted=/(?:Personaje\s*\d+\s*[–—-]\s*)?([\p{L}][\p{L}\p{M} .'-]{0,35}?)\s*:\s*[\s\S]{0,260}?\b(?:dice|responde|pregunta|contesta|grita|susurra|murmura)\s*[:,]?\s*[«“"]([^»”"]{2,1200})[»”"]/giu;
+    const quoted=/(?:Personaje\s*\d+\s*[–—-]\s*)?([\p{L}][\p{L}\p{M} .'-]{0,35}?)\s*:\s*[\s\S]{0,260}?\b(?:dice|responde|pregunta|contesta|grita|susurra|murmura)(?:\s+[^:«“"]{0,80})?\s*[:,]?\s*[«“"]([^»”"]{2,1200})[»”"]/giu;
     let match;
     while((match=quoted.exec(source))!==null){
       const character=match[1].trim().replace(/\s+/g," ").replace(/^Personaje\s*\d+\s*[–—-]\s*/i,"").trim();
