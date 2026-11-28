@@ -15,3 +15,9 @@
   opacity: .55;
   cursor: not-allowed;
 }
+
+/* Speechify audition and playback panel */
+.speechify-player-panel{margin:18px 0;padding:18px;border:1px solid #d8e1ed;border-radius:14px;background:#f8fafd}
+.speechify-player-panel h4{margin:0 0 8px;color:var(--navy)}
+.speechify-audio-player{display:block;width:100%;margin-top:14px;min-height:42px}
+.speechify-player-panel button:disabled{opacity:.6;cursor:wait}
