@@ -69,21 +69,36 @@
     return new Blob([data],{type:"video/mp4"});
   }
 
-  async function loadDialogueVoices(context,destination,analysis,duration){
-    const scenes=Array.isArray(analysis?.scenes)?analysis.scenes:[];
-    const dialogueRows=scenes.flatMap(scene=>(scene.dialogues||[]).map(dialogue=>({character:String(dialogue.character||"").trim(),text:String(dialogue.text||"").trim()})).filter(item=>item.text));
+  async function loadDialogueVoices(context,destination,analysis,duration,storyText){
+    const manifest=window.VSAActiveManifest;
+    const sameStory=Boolean(manifest&&manifest.storyText===String(storyText||"").trim());
+    const manifestRows=sameStory&&Array.isArray(manifest.segments)
+      ? manifest.segments.flatMap(segment=>(segment.dialogues||[]).map(dialogue=>({
+          character:String(dialogue.character||"").trim(),
+          text:String(dialogue.text||"").trim(),
+          voice:String(segment.voiceAssignments?.[dialogue.character]||"").trim()
+        })))
+      : [];
+    const parsedRows=(Array.isArray(analysis?.scenes)?analysis.scenes:[])
+      .flatMap(scene=>(scene.dialogues||[]).map(dialogue=>({
+        character:String(dialogue.character||"").trim(),
+        text:String(dialogue.text||"").trim(),
+        voice:""
+      })));
+    const dialogueRows=manifestRows.length?manifestRows:parsedRows;
     if(!dialogueRows.length)return ()=>{};
     const totalCharacters=dialogueRows.reduce((sum,item)=>sum+Array.from(item.text).length,0);
     if(dialogueRows.length>20||totalCharacters>1200)throw new Error("El diálogo supera el límite de esta prueba 2D (20 intervenciones y 1,200 caracteres). Para películas largas utiliza Wan 2.2, que conserva las voces por personaje.");
     if(typeof window.VSAGetSessionToken!=="function")throw new Error("No se pudo validar la sesión para generar las voces.");
     const token=await window.VSAGetSessionToken(),fallbackVoice=$("video-voice")?.value||"";
-    const manifest=window.VSAActiveManifest;
-    const characterVoices=new Map((manifest?.characters||[]).map(character=>[String(character.name||"").trim().toLocaleLowerCase(),String(character.voice||"")]));
+    const characterVoices=new Map((manifest?.characters||[]).map(character=>[String(character.name||"").trim().toLocaleLowerCase(),String(character.voice||"").trim()]));
     const approved=new Set(window.VSAApprovedSpeechifyVoices||[]),prepared=[];
     for(let index=0;index<dialogueRows.length;index++){
-      const line=dialogueRows[index],assigned=characterVoices.get(line.character.toLocaleLowerCase())||"";
-      const speaker=assigned&&approved.has(assigned)?assigned:fallbackVoice;
-      if(!speaker||!approved.has(speaker))throw new Error("El personaje «"+(line.character||"Sin nombre")+"» necesita una voz aprobada. Asigna una voz en el reparto o selecciona una voz general para este clip.");
+      const line=dialogueRows[index],key=line.character.toLocaleLowerCase();
+      const assigned=line.voice||characterVoices.get(key)||"";
+      const isNarration=/^(narrador|narradora|voz en off|locutor|locutora)$/i.test(line.character);
+      const speaker=assigned||(isNarration?fallbackVoice:"");
+      if(!speaker||!approved.has(speaker))throw new Error("Falta una voz aprobada asignada individualmente a «"+(line.character||"Personaje sin nombre")+"». El selector general inferior no sustituye las voces de los personajes.");
       setMessage("Speechify · preparando diálogo "+(index+1)+" de "+dialogueRows.length+" · "+line.character+"…");
       const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+token},body:JSON.stringify({action:"generate_speech",text:line.text,voice:speaker})});
       if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.message||(response.status===429?"Se alcanzó el límite gratuito de voz. No se realizó ningún cargo.":"Speechify no pudo generar el diálogo "+(index+1)+"."));}
@@ -160,7 +175,7 @@
         if(!window.VSASceneEngine?.buildAudio)
           throw new Error("El motor de sonido no está disponible. Actualiza la página con Ctrl+F5; no se generará un video con zumbido de sustitución.");
         stopAudio=await window.VSASceneEngine.buildAudio(audioContext,destination,duration,analysis);
-        if(analysis.hasDialogue) stopVoices=await loadDialogueVoices(audioContext,destination,analysis,duration);
+        if(analysis.hasDialogue) stopVoices=await loadDialogueVoices(audioContext,destination,analysis,duration,story);
         destination.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
       }
       const mimeType=chooseRecorderType();
