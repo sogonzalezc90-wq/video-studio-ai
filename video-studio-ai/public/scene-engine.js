@@ -111,6 +111,9 @@
   }
   function analyze(input) {
     const rawText=String(input||"").trim();
+    const inlineDialogues=extractInlineDialogues(rawText);
+    const semanticText=rawText.split(/(?:Personaje\s*\d+\s*[–—-]|Audio\s*:|Sincronizaci[oó]n\s*:|Sin subt[ií]tulos\s*:)/i)[0]
+      .replace(/^Video cinematográfico[^.]*\.\s*/i,"").trim();
     const lines=rawText.split(/\r?\n/);
     const scenes=[];
     let scene=null,shot=null,globalInstructions=[],seenScene=false,pendingDialogues=[];
